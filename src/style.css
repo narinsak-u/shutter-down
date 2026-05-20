@@ -2,7 +2,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 
 @theme {
-  --color-surface: #f9f9f9;
+  --color-surface: #ffffff;
   --color-surface-dim: #dadada;
   --color-surface-bright: #f9f9f9;
   --color-surface-container-lowest: #ffffff;
@@ -46,7 +46,7 @@
   --color-tertiary-fixed-dim: #c6c6c6;
   --color-on-tertiary-fixed: #1a1c1c;
   --color-on-tertiary-fixed-variant: #454747;
-  --color-background: #f9f9f9;
+  --color-background: #ffffff;
   --color-on-background: #1a1c1c;
   --color-surface-variant: #e2e2e2;
 

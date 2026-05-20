@@ -27,9 +27,7 @@ onUnmounted(() => {
     :class="{ 'bg-surface-bright/90 backdrop-blur-md': scrollY > 50 }"
   >
     <div class="flex items-center gap-12">
-      <h1 class="text-headline-lg font-headline-lg text-primary tracking-tighter">
-        LUMINA
-      </h1>
+      <h1 class="text-headline-lg font-headline-lg text-primary tracking-tighter">LUMINA</h1>
       <nav class="hidden md:flex gap-8">
         <a
           href="#gallery"
@@ -37,22 +35,12 @@ onUnmounted(() => {
         >
           Gallery
         </a>
-        <a
-          href="#"
-          class="text-label-sm font-label-sm text-secondary pb-1 hover:text-primary transition-colors duration-200"
-        >
-          Archive
-        </a>
-        <a
-          href="#"
-          class="text-label-sm font-label-sm text-secondary pb-1 hover:text-primary transition-colors duration-200"
-        >
-          About
-        </a>
       </nav>
     </div>
     <div class="flex items-center gap-4">
-      <span class="hidden sm:inline text-label-sm font-label-sm text-outline-variant uppercase tracking-widest">
+      <span
+        class="hidden sm:inline text-label-sm font-label-sm text-outline-variant uppercase tracking-widest"
+      >
         Curated 2024
       </span>
       <button

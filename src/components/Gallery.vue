@@ -4,8 +4,10 @@ import { useGalleryStore } from "@/stores/gallery";
 import GalleryItem from "./GalleryItem.vue";
 import Lightbox from "./Lightbox.vue";
 
+defineOptions({ name: "GallerySection" });
+
 const galleryStore = useGalleryStore();
-const categories = ["all", "Architecture", "Nature", "Abstract", "Portrait"];
+const categories = ["all", "Architecture", "Nature", "Portrait"];
 
 let observer: IntersectionObserver | null = null;
 
@@ -55,15 +57,13 @@ watch(
 
 <template>
   <main
-    class="pt-32 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop min-h-screen"
+    class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop min-h-screen"
   >
     <section class="mb-16 md:mb-20 max-w-2xl">
-      <h2 class="text-headline-xl font-headline-xl text-primary mb-6">
-        A study in contrast and light.
-      </h2>
+      <h2 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h2>
       <p class="text-body-lg font-body-lg text-secondary max-w-xl">
-        Curated frames from a nomadic year exploring the intersection of brutalist architecture and
-        the softness of natural light.
+        Walk around, frame the shot, and immediately move on to the next thing without overthinking
+        it.
       </p>
     </section>
 
@@ -73,7 +73,7 @@ watch(
         :key="category"
         @click="galleryStore.setFilter(category)"
         :class="[
-          'text-label-sm font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1',
+          'text-label-sm cursor-pointer font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1',
           galleryStore.activeFilter === category
             ? 'text-primary border-b-2 border-primary'
             : 'text-secondary hover:text-primary',
@@ -100,13 +100,13 @@ watch(
       <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
     </div>
 
-    <div class="mt-section-gap flex justify-center">
+    <!-- <div class="mt-section-gap flex justify-center">
       <button
         class="px-12 py-4 border border-outline text-primary text-label-md font-label-md hover:border-primary transition-all duration-200 ease-out"
       >
         VIEW ARCHIVE
       </button>
-    </div>
+    </div> -->
   </main>
 
   <Lightbox v-model="galleryStore.lightboxOpen" :src="galleryStore.lightboxSrc" />

@@ -36,10 +36,6 @@ const close = () => {
     >
       <span class="material-symbols-outlined text-3xl">close</span>
     </button>
-    <img
-      :src="src"
-      class="max-h-full max-w-full object-contain"
-      :alt="'Expanded gallery image'"
-    />
+    <img :src="src" class="max-h-full max-w-full object-contain" :alt="'Expanded gallery image'" />
   </div>
 </template>

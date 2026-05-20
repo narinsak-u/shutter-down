@@ -34,11 +34,11 @@ export const useGalleryStore = defineStore('gallery', () => {
     {
       id: "3",
       src: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&q=80",
-      alt: "Abstract composition of organic textures and patterns.",
+      alt: "Nature composition of organic textures and patterns.",
       location: "Reykjavik, IS",
       date: "Oct 2023",
       type: "square",
-      category: "Abstract",
+      category: "Nature",
     },
     {
       id: "4",
@@ -61,11 +61,11 @@ export const useGalleryStore = defineStore('gallery', () => {
     {
       id: "6",
       src: "https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=800&q=80",
-      alt: "Geometric abstraction of light and shadow.",
+      alt: "Geometric Natureion of light and shadow.",
       location: "Atacama, CL",
       date: "May 2023",
       type: "square",
-      category: "Abstract",
+      category: "Nature",
     },
     {
       id: "7",
@@ -104,13 +104,13 @@ export const useGalleryStore = defineStore('gallery', () => {
     lightboxOpen.value = true
   }
 
-  return { 
-    photos, 
-    activeFilter, 
-    lightboxOpen, 
-    lightboxSrc, 
-    filteredPhotos, 
-    setFilter, 
-    openLightbox 
+  return {
+    photos,
+    activeFilter,
+    lightboxOpen,
+    lightboxSrc,
+    filteredPhotos,
+    setFilter,
+    openLightbox
   }
 })
