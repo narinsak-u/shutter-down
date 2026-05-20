@@ -1,40 +1,29 @@
 <script setup lang="ts">
-interface Props {
+defineProps<{
   src: string;
   alt: string;
   location: string;
   date: string;
   type: "portrait" | "landscape" | "square";
-}
-
-defineProps<Props>();
-
-const emit = defineEmits<{
-  click: [];
 }>();
+
+defineEmits(["click"]);
 </script>
 
 <template>
   <div
-    :class="[
-      'masonry-item',
-      type,
-      'group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out cursor-pointer',
-    ]"
-    @click="emit('click')"
+    :class="['masonry-item group relative overflow-hidden bg-surface-container cursor-pointer', type]"
+    @click="$emit('click')"
   >
     <img
       :src="src"
       :alt="alt"
-      class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out"
+      class="w-full h-full object-cover image-zoom"
+      loading="lazy"
     />
-    <div
-      class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none"
-    >
+    <div class="hover-info absolute inset-0 bg-primary/10 flex flex-col justify-end p-6 pointer-events-none">
       <span class="font-label-md text-label-md text-on-primary">{{ location }}</span>
       <span class="font-label-sm text-label-sm text-on-primary/80 uppercase">{{ date }}</span>
     </div>
   </div>
 </template>
-
-<style scoped></style>

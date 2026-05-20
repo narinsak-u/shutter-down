@@ -44,6 +44,7 @@ body {
 
 .masonry-item {
   grid-row-end: span 20;
+  transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .masonry-item.portrait {
@@ -88,6 +89,19 @@ body {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+main {
+  animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @layer components {
