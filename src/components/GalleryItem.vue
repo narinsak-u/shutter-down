@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref } from "vue";
-
 interface Props {
   src: string;
   alt: string;
@@ -14,12 +12,6 @@ defineProps<Props>();
 const emit = defineEmits<{
   click: [];
 }>();
-
-const isLoading = ref(true);
-
-const handleImageLoad = () => {
-  isLoading.value = false;
-};
 </script>
 
 <template>
@@ -35,7 +27,6 @@ const handleImageLoad = () => {
       :src="src"
       :alt="alt"
       class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out"
-      @load="handleImageLoad"
     />
     <div
       class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none"

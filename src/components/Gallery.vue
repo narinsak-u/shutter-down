@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useGalleryStore } from "@/stores/gallery";
 import GalleryItem from "./GalleryItem.vue";
 import Lightbox from "./Lightbox.vue";
@@ -7,8 +7,12 @@ import Lightbox from "./Lightbox.vue";
 const galleryStore = useGalleryStore();
 const categories = ["all", "Architecture", "Nature", "Abstract", "Portrait"];
 
+let observer: IntersectionObserver | null = null;
+
 const setupScrollReveal = () => {
-  const observer = new IntersectionObserver(
+  if (observer) observer.disconnect();
+
+  observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry, index) => {
         if (entry.isIntersecting) {
@@ -18,6 +22,7 @@ const setupScrollReveal = () => {
             item.classList.add("opacity-100");
             item.style.transform = "translateY(0)";
           }, index * 100);
+          observer?.unobserve(entry.target);
         }
       });
     },
@@ -26,15 +31,27 @@ const setupScrollReveal = () => {
 
   const items = document.querySelectorAll(".masonry-item");
   items.forEach((item) => {
-    observer.observe(item);
+    observer?.observe(item);
   });
-
-  return () => observer.disconnect();
 };
 
 onMounted(() => {
   setupScrollReveal();
 });
+
+onUnmounted(() => {
+  if (observer) observer.disconnect();
+});
+
+// Re-observe items when filtered list changes
+watch(
+  () => galleryStore.filteredPhotos,
+  async () => {
+    await nextTick();
+    setupScrollReveal();
+  },
+  { deep: true },
+);
 </script>
 
 <template>

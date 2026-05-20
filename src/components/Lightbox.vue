@@ -1,35 +1,22 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { watch } from "vue";
 
 interface Props {
-  modelValue: boolean;
   src?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   src: "",
 });
 
-const emit = defineEmits<{
-  "update:modelValue": [value: boolean];
-}>();
-
-const isOpen = ref(props.modelValue);
-
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    isOpen.value = newValue;
-    if (newValue) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-  },
-);
+const isOpen = defineModel<boolean>({ default: false });
 
 watch(isOpen, (newValue) => {
-  emit("update:modelValue", newValue);
+  if (newValue) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
 });
 
 const close = () => {
