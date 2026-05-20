@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import App from '../App.vue'
 
 // Mock IntersectionObserver
@@ -16,13 +16,9 @@ const IntersectionObserverMock = vi.fn(function() {
 vi.stubGlobal('IntersectionObserver', IntersectionObserverMock)
 
 describe('App', () => {
-  it('mounts renders properly', () => {
-    const pinia = createPinia()
-    const wrapper = mount(App, {
-      global: {
-        plugins: [pinia]
-      }
-    })
-    expect(wrapper.text()).toContain('A study in contrast and light.')
+  it('renders properly and shows brand', () => {
+    setActivePinia(createPinia())
+    const wrapper = mount(App)
+    expect(wrapper.text()).toContain('LUMINA')
   })
 })
