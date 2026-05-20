@@ -88,7 +88,13 @@ watch(
       </button>
     </nav>
 
-    <div class="masonry-grid" id="gallery">
+    <TransitionGroup
+      name="gallery"
+      tag="div"
+      class="masonry-grid"
+      id="gallery"
+      @enter="(el: Element) => el.classList.remove('opacity-0', 'translate-y-8')"
+    >
       <GalleryItem
         v-for="(item, index) in galleryStore.filteredPhotos"
         :key="item.id"
@@ -99,7 +105,7 @@ watch(
         :type="item.type"
         @click="openPhoto(index)"
       />
-    </div>
+    </TransitionGroup>
 
     <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
       <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
