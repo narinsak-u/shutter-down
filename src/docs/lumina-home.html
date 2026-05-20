@@ -1,0 +1,323 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LUMINA | Minimalist Photography Gallery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style class="">
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/npm/geist@1.0.3/dist/fonts/geist-sans/Geist-Regular.woff2') format('woff2');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/npm/geist@1.0.3/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
+            font-weight: 500;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/npm/geist@1.0.3/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
+            font-weight: 600;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/npm/geist@1.0.3/dist/fonts/geist-sans/Geist-Bold.woff2') format('woff2');
+            font-weight: 700;
+        }
+
+        body {
+            font-family: 'Geist', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-auto-rows: 10px;
+            gap: 12px;
+        }
+
+        .masonry-item {
+            grid-row-end: span 20;
+        }
+
+        .masonry-item.portrait { grid-row-end: span 45; }
+        .masonry-item.landscape { grid-row-end: span 25; }
+        .masonry-item.square { grid-row-end: span 35; }
+
+        .image-reveal {
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+        }
+
+        .hover-info {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .group:hover .hover-info {
+            opacity: 1;
+        }
+
+        .group:hover .image-zoom {
+            transform: scale(1.03);
+        }
+    </style>
+<!-- Tailwind Config Execution -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#1a1c1c",
+                    "surface": "#f9f9f9",
+                    "outline-variant": "#cfc4c5",
+                    "inverse-surface": "#2f3131",
+                    "on-secondary-fixed": "#1b1c1c",
+                    "on-primary-fixed": "#1b1b1b",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f1f1f1",
+                    "on-tertiary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#c6c6c6",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#c6c6c6",
+                    "outline": "#7e7576",
+                    "primary-fixed": "#e2e2e2",
+                    "surface-variant": "#e2e2e2",
+                    "secondary-fixed-dim": "#c7c6c6",
+                    "tertiary-fixed-dim": "#c6c6c6",
+                    "on-surface": "#1a1c1c",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#5e5e5e",
+                    "on-secondary-fixed-variant": "#464747",
+                    "secondary-fixed": "#e3e2e2",
+                    "surface-container": "#eeeeee",
+                    "on-background": "#1a1c1c",
+                    "background": "#f9f9f9",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e2e2e2",
+                    "secondary": "#5e5e5e",
+                    "primary": "#000000",
+                    "on-primary-fixed-variant": "#474747",
+                    "surface-container-low": "#f3f3f3",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "on-surface-variant": "#4c4546",
+                    "on-primary-container": "#848484",
+                    "tertiary": "#000000",
+                    "secondary-container": "#e3e2e2",
+                    "on-secondary-container": "#646464",
+                    "surface-dim": "#dadada",
+                    "tertiary-fixed": "#e2e2e2",
+                    "surface-container-high": "#e8e8e8",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "surface-bright": "#f9f9f9",
+                    "primary-container": "#1b1b1b",
+                    "on-tertiary-container": "#838484"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "container-margin-desktop": "64px",
+                    "unit": "8px",
+                    "section-gap": "80px",
+                    "container-margin-mobile": "24px"
+            },
+            "fontFamily": {
+                    "headline-xl-mobile": ["Geist"],
+                    "label-sm": ["Geist"],
+                    "body-md": ["Geist"],
+                    "label-md": ["Geist"],
+                    "headline-lg": ["Geist"],
+                    "body-lg": ["Geist"],
+                    "headline-xl": ["Geist"]
+            },
+            "fontSize": {
+                    "headline-xl-mobile": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "headline-lg": ["24px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface dark:bg-background border-b border-outline-variant dark:border-on-surface-variant flex justify-between items-center w-full px-container-margin-mobile md:px-container-margin-desktop py-4 h-20 fixed top-0 z-50 transition-all duration-200 ease-out">
+<div class="flex items-center gap-12">
+<h1 class="font-headline-lg text-headline-lg font-bold tracking-tighter text-primary dark:text-on-background">LUMINA</h1>
+<nav class="hidden md:flex gap-8">
+<a class="font-label-sm text-label-sm text-primary dark:text-on-background border-b-2 border-primary dark:border-on-background pb-1 hover:text-primary dark:hover:text-on-background transition-colors duration-200" href="#">Gallery</a>
+<a class="font-label-sm text-label-sm text-secondary dark:text-on-secondary-fixed-variant pb-1 hover:text-primary dark:hover:text-on-background transition-colors duration-200" href="#">Archive</a>
+<a class="font-label-sm text-label-sm text-secondary dark:text-on-secondary-fixed-variant pb-1 hover:text-primary dark:hover:text-on-background transition-colors duration-200" href="#">About</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed-dim">Curated 2024</span>
+<button class="md:hidden flex items-center justify-center p-2 text-primary" id="mobile-menu-toggle">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop min-h-screen">
+<!-- Gallery Intro Header -->
+<section class="max-w-2xl mb-8">
+<h2 class="font-headline-xl text-headline-xl mb-4">A study in contrast and light.</h2>
+<p class="font-body-lg text-body-lg text-secondary max-w-xl">Curated frames from a nomadic year. This archive explores the intersection of brutalist architecture and the softness of natural light.</p>
+</section><nav class="flex items-center gap-8 mb-12 overflow-x-auto no-scrollbar">
+    <a href="#" class="font-label-sm text-label-sm text-primary border-b-2 border-primary pb-1 transition-all duration-200">All</a>
+    <a href="#" class="font-label-sm text-label-sm text-secondary hover:text-primary transition-all duration-200">Architecture</a>
+    <a href="#" class="font-label-sm text-label-sm text-secondary hover:text-primary transition-all duration-200">Nature</a>
+    <a href="#" class="font-label-sm text-label-sm text-secondary hover:text-primary transition-all duration-200">Abstract</a>
+    <a href="#" class="font-label-sm text-label-sm text-secondary hover:text-primary transition-all duration-200">Portrait</a>
+</nav>
+<!-- Dynamic Masonry Grid -->
+<div class="masonry-grid" id="gallery">
+<!-- Item 1: Portrait -->
+<div class="masonry-item portrait group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out opacity-100" style="transform: translateY(0px);">
+<img class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out" data-alt="A minimalist architectural photograph featuring a stark concrete wall set against a bright, cloudless blue sky. The lighting is harsh and direct, creating deep, angular shadows that emphasize the texture of the Brutalist building. The overall mood is cold and precise, perfectly aligned with a high-end gallery aesthetic in a monochrome-dominant palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDknbasXn0BqRpL69-VFeAqioD_x9nj5FDk3j1rzZ_Ftg61HV1MwtQCJ7nWmEYoCCd2n_OZG0zfTGlfusqWxoauB-qeQIW3OeXwfOS9TN5O2J0pgXAVXcmLM9ErDdSlhb1qgjvcZzDHj4Z2ExvV-r04EJX1DL5aDmz1hsBYz5P9IQGZ_Jf0Fm4F4mJkqD0-7x8tWqAi3ILau5pC8GWrAyaegMPBggzi_jeX4fhv8WgXykxaqavUnlp0bA53BK8q__F2cddhLizUUp_s">
+<div class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none">
+<span class="font-label-md text-label-md text-on-primary">Stockholm, SE</span>
+<span class="font-label-sm text-label-sm text-on-primary/80 uppercase">Sept 2023</span>
+</div>
+</div>
+<!-- Item 2: Landscape -->
+<div class="masonry-item landscape group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out opacity-100" style="transform: translateY(0px);">
+<img class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out" data-alt="A serene landscape captured in a minimalist style, showing a calm lake reflecting a misty mountain range in the early morning. The color palette is restricted to soft grays, deep blacks, and muted whites, creating an ethereal and atmospheric mood. The composition is balanced and spacious, reflecting the 'Invisible Frame' philosophy of the Lumina photography brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2CTBXpoDSYQLPuf726w4uZ6Q2wMLADk9YcBgvX3mbywPyBzQoInPnAji-k39sQeugvZtnjKUJYKKgPNPfRKTfOmuzqww3KBZV2tTl3RLhyG-83yGtAylDnlwf41GY9WmzdIK3MlKqJ_NHSumk0MW1dsYOcVoKttSajZx_9jBgDHJ0Cc2BapOX649tofOGnIxUMaT15Yl4gCXdstKNXc2JChLo2i9h0pq6Pk_EXJgUgSH8hHCJSP3cbnmgS3ELjzT_DKtGd5v6Mxkf">
+<div class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none">
+<span class="font-label-md text-label-md text-on-primary">Lofoten, NO</span>
+<span class="font-label-sm text-label-sm text-on-primary/80 uppercase">Dec 2023</span>
+</div>
+</div>
+<!-- Item 3: Square -->
+<div class="masonry-item square group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out opacity-100" style="transform: translateY(0px);">
+<img class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out" data-alt="Close-up detail of an organic texture, possibly a rock face or dried earth, rendered in high-contrast black and white. Every crack and grain is highlighted by raking, low-angle light, creating a sophisticated and editorial feel. The image embodies modern minimalism through its focus on geometry and abstract form, suitable for a professional art gallery display." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeBnpWvZUQSv7MiU5ZHUHdZNLi7zrNqGNIykgVPdGh1JbhH_zYzwqHCjCYP9O97GTlNH73FhsSgraatUCFF5JbfSVi3hkOGr5NjQLYDDc1t5LWVqlFXNcaxTOvILo5Sos2s8xyOsctvBG8AUmLcfeqMDt4zwCPqTclwyfeZuFRpUpXOgLfoxyAxCf1Inu-RK9T_UM5sErvjuaSQ12FdJj6J_pvNkHIoxDXokoU9xcfIX8rDxMDevTzC52ixmuO6bW1xOnDDIQHRj-m">
+<div class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none">
+<span class="font-label-md text-label-md text-on-primary">Reykjavik, IS</span>
+<span class="font-label-sm text-label-sm text-on-primary/80 uppercase">Oct 2023</span>
+</div>
+</div>
+<!-- Item 4: Portrait -->
+<div class="masonry-item portrait group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out opacity-100" style="transform: translateY(0px);">
+<img class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out" data-alt="A high-key fashion-inspired architectural shot showing a person walking through a vast, white marble hallway. The lighting is soft and diffused, eliminating harsh shadows and creating a clean, airy aesthetic. The subject is small in the frame, emphasizing the grand scale and minimalist design of the interior space. The color story is exclusively shades of white and gray." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqKcuk7mx2ZZRthH_Idl_Gf8fZPW3ZEeW6yHOKDt7qD28ieUoqq1ox9BizoDdmOE-nnKbm-RGNDVcjQz_ZUXheOi7CyqGzedMfwcEplvcJVPdjArEzXvQ4ViGf7xjh1kBZDVMbYfR8REG4VNRmJOCeQumhEnKh1IkRAmbmAFhOdt8zjFgqlWRFKMZHyQTr9B7yu-broh7_c0JcvGyj_My1ubyVfKHdTKFHLK9laqHv2OQpp0FdqbLOHF5PAQa8Tr3yRZuMLbbzyGU_">
+<div class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none">
+<span class="font-label-md text-label-md text-on-primary">Milan, IT</span>
+<span class="font-label-sm text-label-sm text-on-primary/80 uppercase">Mar 2024</span>
+</div>
+</div>
+<!-- Item 5: Landscape -->
+<div class="masonry-item landscape group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out opacity-100" style="transform: translateY(0px);">
+<img class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out" data-alt="A striking minimalist seascape at dusk, where the horizon line is almost invisible due to thick coastal fog. The water is perfectly still, reflecting a gradient of deep charcoal and soft slate grays. This image captures a sense of profound calm and precision, utilizing negative space to draw the viewer into the center of the frame. The mood is sophisticated and contemplative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzQkpLu65CY2BfnWoq9psEIJnVngQp5f1-8yG1ADXxxvnxqElTsfNdGfhlinMtLvKw_IP3tkUSJyUHdH80NA9Vq595pr6l0LFY4q7Y0uGo9zwcRpBWlcha_M_E5TFIBrGlJEItLUTVMdQoj0yERwgzFxJJqouyoDRJHxnUNiD1-9SlTDlLMAjQfKi1GPXJIJrZYYZ8L2I2Ypo_Fj0XCUYWbPwtuSWROnKuFryrTMiKXEWsJU00EhgtMHb2O6AWc3YGVKrEdLaPkjsT">
+<div class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none">
+<span class="font-label-md text-label-md text-on-primary">Skye, UK</span>
+<span class="font-label-sm text-label-sm text-on-primary/80 uppercase">Jan 2024</span>
+</div>
+</div>
+<!-- Item 6: Square -->
+<div class="masonry-item square group relative overflow-hidden bg-surface-container opacity-0 translate-y-8 transition-all duration-700 ease-out opacity-100" style="transform: translateY(0px);">
+<img class="w-full h-full object-cover image-zoom transition-transform duration-500 ease-out" data-alt="A celestial-themed minimalist photograph showing a single star shining through dark, wispy clouds in a midnight black sky. The grain of the photograph is intentionally visible, giving it an editorial and tactile quality. The composition follows the 'Invisible Frame' rule, using immense negative space to emphasize the small point of light. The aesthetic is modern and premium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARa81t_qaDctA5vilRhftXNbd-HWAIWL7oJKJNzPTgEB-lLN5F2bxFRQ9rrP6GymozWfSyKyfwgf5qoPkS_tKcnUQg79uueoTnYptl3rqH1gDdnSpykmnGsGAqmC4G6hwFPsbVxtkaxOCzgo-wG5IpFZDRt3zhFpjt5Vlaguc8Xx6a0VMnpgNG2qqr50VPQ23Q7JYh_08QHq5-IkcH0p2xgRRphbLM9VWYRcbwbvlMwX8fS4LcC4DWr1BlIKtI2nM-pz8TFmFe_1vX">
+<div class="hover-info absolute inset-0 bg-primary/20 flex flex-col justify-end p-6 pointer-events-none">
+<span class="font-label-md text-label-md text-on-primary">Atacama, CL</span>
+<span class="font-label-sm text-label-sm text-on-primary/80 uppercase">May 2023</span>
+</div>
+</div>
+</div>
+<!-- Load More Section -->
+<div class="mt-section-gap flex justify-center">
+<button class="px-12 py-4 border border-outline text-primary font-label-md text-label-md hover:bg-primary hover:text-on-primary transition-all duration-300 ease-out">
+                VIEW ARCHIVE
+            </button>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface dark:bg-background border-t border-outline-variant dark:border-on-surface-variant w-full px-container-margin-mobile md:px-container-margin-desktop py-gutter flex flex-col md:flex-row justify-between items-center gap-4 transition-all duration-200 ease-out">
+<div class="flex flex-col md:flex-row items-center gap-8">
+<span class="font-label-md text-label-md font-bold text-primary">LUMINA</span>
+<p class="font-label-sm text-label-sm text-secondary dark:text-on-secondary-fixed-variant">© 2024 Lumina Photography. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="font-label-sm text-label-sm text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-background transition-colors duration-200" href="#">Privacy</a>
+<a class="font-label-sm text-label-sm text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-background transition-colors duration-200" href="#">Terms</a>
+<a class="font-label-sm text-label-sm text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-background transition-colors duration-200" href="#">Contact</a>
+</div>
+</footer>
+<!-- Lightbox/Overlay placeholder for later interaction logic -->
+<div class="fixed inset-0 bg-white z-[100] opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-container-margin-desktop" id="lightbox">
+<button class="absolute top-8 right-8 p-4" id="close-lightbox">
+<span class="material-symbols-outlined text-4xl">close</span>
+</button>
+<img class="max-h-full max-w-full object-contain shadow-2xl" data-alt="Expanded view of a high-resolution gallery photograph in a minimalist white-space setting." id="lightbox-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMzAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgcng9IjgiIGZpbGw9IiNlOGVhZWQiLz48cGF0aCBkPSJNMTcwIDEzMCBsMzAgNDAgbDIwLTE1IGw0MCA1NSBIMTQweiIgZmlsbD0iI2JkYzFjNiIvPjxjaXJjbGUgY3g9IjI1MCIgY3k9IjEyMCIgcj0iMTgiIGZpbGw9IiNiZGMxYzYiLz48L3N2Zz4=">
+</div>
+<script>
+        // Micro-interactions & Smooth Entrance
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = document.querySelectorAll('.masonry-item');
+            
+            // Simple reveal on scroll
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.classList.add('opacity-100');
+                            entry.target.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            items.forEach(item => {
+                item.classList.add('opacity-0', 'translate-y-8', 'transition-all', 'duration-700', 'ease-out');
+                observer.observe(item);
+            });
+
+            // Lightbox Interaction
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const closeBtn = document.getElementById('close-lightbox');
+
+            items.forEach(item => {
+                item.addEventListener('click', () => {
+                    const src = item.querySelector('img').src;
+                    lightboxImg.src = src;
+                    lightbox.classList.remove('opacity-0', 'pointer-events-none');
+                    lightbox.classList.add('opacity-100', 'pointer-events-auto');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+
+            closeBtn.addEventListener('click', () => {
+                lightbox.classList.add('opacity-0', 'pointer-events-none');
+                lightbox.classList.remove('opacity-100', 'pointer-events-auto');
+                document.body.style.overflow = 'auto';
+            });
+
+            // Header Shadow on Scroll
+            window.addEventListener('scroll', () => {
+                const header = document.querySelector('header');
+                if (window.scrollY > 50) {
+                    header.classList.add('bg-white/80', 'backdrop-blur-md');
+                } else {
+                    header.classList.remove('bg-white/80', 'backdrop-blur-md');
+                }
+            });
+        });
+    </script>
+
+
+</body></html>
