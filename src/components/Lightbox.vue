@@ -35,8 +35,6 @@ watch(isOpen, (newValue) => {
 const close = () => {
   isOpen.value = false;
 };
-
-import { withDefaults } from "vue";
 </script>
 
 <template>
