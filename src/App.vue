@@ -1,11 +1,17 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import Header from "./components/Header.vue";
+import Gallery from "./components/Gallery.vue";
+import Footer from "./components/Footer.vue";
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div
+    class="bg-surface dark:bg-background text-on-surface dark:text-on-background selection:bg-primary selection:text-on-primary min-h-screen"
+  >
+    <Header />
+    <Gallery />
+    <Footer />
+  </div>
 </template>
 
 <style scoped></style>
