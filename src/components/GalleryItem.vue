@@ -12,7 +12,7 @@ defineEmits(["click"]);
 
 <template>
   <div
-    :class="['masonry-item group relative overflow-hidden bg-surface-container cursor-pointer', type]"
+    :class="['masonry-item group relative overflow-hidden bg-surface-container cursor-pointer opacity-0 translate-y-8', type]"
     @click="$emit('click')"
   >
     <img
