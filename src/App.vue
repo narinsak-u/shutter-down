@@ -5,13 +5,9 @@ import Footer from "./components/Footer.vue";
 </script>
 
 <template>
-  <div
-    class="bg-surface dark:bg-background text-on-surface dark:text-on-background selection:bg-primary selection:text-on-primary min-h-screen"
-  >
+  <div class="bg-surface text-on-surface min-h-screen selection:bg-primary selection:text-on-primary">
     <Header />
     <Gallery />
     <Footer />
   </div>
 </template>
-
-<style scoped></style>

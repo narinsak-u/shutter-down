@@ -1,6 +1,146 @@
 @import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 
+@theme {
+  --color-surface: #f9f9f9;
+  --color-surface-dim: #dadada;
+  --color-surface-bright: #f9f9f9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f3;
+  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e2e2e2;
+  --color-on-surface: #1a1c1c;
+  --color-on-surface-variant: #4c4546;
+  --color-inverse-surface: #2f3131;
+  --color-inverse-on-surface: #f1f1f1;
+  --color-outline: #7e7576;
+  --color-outline-variant: #cfc4c5;
+  --color-surface-tint: #5e5e5e;
+  --color-primary: #000000;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1b1b1b;
+  --color-on-primary-container: #848484;
+  --color-inverse-primary: #c6c6c6;
+  --color-secondary: #5e5e5e;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #e3e2e2;
+  --color-on-secondary-container: #646464;
+  --color-tertiary: #000000;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #1a1c1c;
+  --color-on-tertiary-container: #838484;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #e2e2e2;
+  --color-primary-fixed-dim: #c6c6c6;
+  --color-on-primary-fixed: #1b1b1b;
+  --color-on-primary-fixed-variant: #474747;
+  --color-secondary-fixed: #e3e2e2;
+  --color-secondary-fixed-dim: #c7c6c6;
+  --color-on-secondary-fixed: #1b1c1c;
+  --color-on-secondary-fixed-variant: #464747;
+  --color-tertiary-fixed: #e2e2e2;
+  --color-tertiary-fixed-dim: #c6c6c6;
+  --color-on-tertiary-fixed: #1a1c1c;
+  --color-on-tertiary-fixed-variant: #454747;
+  --color-background: #f9f9f9;
+  --color-on-background: #1a1c1c;
+  --color-surface-variant: #e2e2e2;
+
+  --spacing-unit: 8px;
+  --spacing-container-margin-desktop: 64px;
+  --spacing-container-margin-mobile: 24px;
+  --spacing-gutter: 24px;
+  --spacing-section-gap: 80px;
+
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+}
+
+@utility material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+@utility text-headline-xl {
+  font-size: 40px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@utility text-headline-lg {
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+}
+
+@utility text-body-lg {
+  font-size: 18px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+@utility text-body-md {
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+@utility text-label-md {
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+@utility text-label-sm {
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+@utility font-headline-xl {
+  font-family: "Geist", sans-serif;
+}
+
+@utility font-headline-lg {
+  font-family: "Geist", sans-serif;
+}
+
+@utility font-body-lg {
+  font-family: "Geist", sans-serif;
+}
+
+@utility font-body-md {
+  font-family: "Geist", sans-serif;
+}
+
+@utility font-label-md {
+  font-family: "Geist", sans-serif;
+}
+
+@utility font-label-sm {
+  font-family: "Geist", sans-serif;
+}
+
 @font-face {
   font-family: "Geist";
   src: url("https://cdn.jsdelivr.net/npm/geist@1.0.3/dist/fonts/geist-sans/Geist-Regular.woff2")
@@ -36,50 +176,34 @@ body {
 }
 
 .masonry-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  grid-auto-rows: 10px;
-  gap: 12px;
+  columns: 3;
+  column-gap: 24px;
 }
 
-.masonry-item {
-  grid-row-end: span 20;
-  transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+@media (max-width: 900px) {
+  .masonry-grid {
+    columns: 2;
+  }
 }
 
-.masonry-item.portrait {
-  grid-row-end: span 45;
+@media (max-width: 600px) {
+  .masonry-grid {
+    columns: 1;
+  }
 }
 
-.masonry-item.landscape {
-  grid-row-end: span 25;
-}
-
-.masonry-item.square {
-  grid-row-end: span 35;
-}
-
-.image-reveal {
-  transition:
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.6s ease;
-}
-
-.hover-info {
-  opacity: 0;
-  transition: opacity 0.3s ease-out;
-}
-
-.group:hover .hover-info {
-  opacity: 1;
-}
-
-.group:hover .image-zoom {
-  transform: scale(1.03);
+.gallery-item {
+  break-inside: avoid;
+  margin-bottom: 24px;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
 .image-zoom {
-  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .image-zoom {
+  transform: scale(1.02);
 }
 
 .no-scrollbar {
@@ -101,21 +225,5 @@ main {
   }
   to {
     opacity: 1;
-  }
-}
-
-@layer components {
-  .material-symbols-outlined {
-    font-family: "Material Symbols Outlined";
-    font-weight: normal;
-    font-style: normal;
-    font-size: 24px;
-    display: inline-block;
-    line-height: 1;
-    text-transform: none;
-    letter-spacing: normal;
-    word-wrap: normal;
-    white-space: nowrap;
-    direction: ltr;
   }
 }

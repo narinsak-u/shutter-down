@@ -12,18 +12,19 @@ defineEmits(["click"]);
 
 <template>
   <div
-    :class="['masonry-item group relative overflow-hidden bg-surface-container cursor-pointer opacity-0 translate-y-8', type]"
+    class="gallery-item group relative cursor-pointer opacity-0 translate-y-8"
     @click="$emit('click')"
   >
-    <img
-      :src="src"
-      :alt="alt"
-      class="w-full h-full object-cover image-zoom"
-      loading="lazy"
-    />
-    <div class="hover-info absolute inset-0 bg-primary/10 flex flex-col justify-end p-6 pointer-events-none">
-      <span class="font-label-md text-label-md text-on-primary">{{ location }}</span>
-      <span class="font-label-sm text-label-sm text-on-primary/80 uppercase">{{ date }}</span>
+      <img
+        :src="src"
+        :alt="alt"
+        class="w-full h-auto block image-zoom"
+        loading="lazy"
+        draggable="false"
+      />
+    <div class="pt-3 pb-2">
+      <p class="text-label-md font-label-md text-primary">{{ location }}</p>
+      <p class="text-label-sm font-label-sm text-secondary uppercase mt-1">{{ date }}</p>
     </div>
   </div>
 </template>

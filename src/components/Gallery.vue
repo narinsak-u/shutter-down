@@ -29,7 +29,7 @@ const setupScrollReveal = () => {
     { threshold: 0.1 },
   );
 
-  const items = document.querySelectorAll(".masonry-item");
+  const items = document.querySelectorAll(".gallery-item");
   items.forEach((item) => {
     observer?.observe(item);
   });
@@ -43,7 +43,6 @@ onUnmounted(() => {
   if (observer) observer.disconnect();
 });
 
-// Re-observe items when filtered list changes
 watch(
   () => galleryStore.filteredPhotos,
   async () => {
@@ -58,33 +57,32 @@ watch(
   <main
     class="pt-32 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop min-h-screen"
   >
-    <!-- Gallery Intro Header -->
-    <section class="max-w-2xl mb-8">
-      <h2 class="font-headline-xl text-headline-xl mb-4">A study in contrast and light.</h2>
-      <p class="font-body-lg text-body-lg text-secondary max-w-xl">
-        Curated frames from a nomadic year. This archive explores the intersection of brutalist
-        architecture and the softness of natural light.
+    <section class="mb-16 md:mb-20 max-w-2xl">
+      <h2 class="text-headline-xl font-headline-xl text-primary mb-6">
+        A study in contrast and light.
+      </h2>
+      <p class="text-body-lg font-body-lg text-secondary max-w-xl">
+        Curated frames from a nomadic year exploring the intersection of brutalist architecture and
+        the softness of natural light.
       </p>
     </section>
 
-    <!-- Category Filter Nav -->
     <nav class="flex items-center gap-8 mb-12 overflow-x-auto no-scrollbar">
       <button
         v-for="category in categories"
         :key="category"
         @click="galleryStore.setFilter(category)"
         :class="[
-          'font-label-sm text-label-sm whitespace-nowrap transition-all duration-200',
+          'text-label-sm font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1',
           galleryStore.activeFilter === category
-            ? 'text-primary border-b-2 border-primary pb-1'
+            ? 'text-primary border-b-2 border-primary'
             : 'text-secondary hover:text-primary',
         ]"
       >
-        {{ category === "all" ? "All" : category }}
+        {{ category === "all" ? "All Work" : category }}
       </button>
     </nav>
 
-    <!-- Dynamic Masonry Grid -->
     <div class="masonry-grid" id="gallery">
       <GalleryItem
         v-for="item in galleryStore.filteredPhotos"
@@ -98,16 +96,18 @@ watch(
       />
     </div>
 
-    <!-- Load More Section -->
+    <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
+      <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
+    </div>
+
     <div class="mt-section-gap flex justify-center">
       <button
-        class="px-12 py-4 border border-outline text-primary font-label-md text-label-md hover:bg-primary hover:text-on-primary transition-all duration-300 ease-out"
+        class="px-12 py-4 border border-outline text-primary text-label-md font-label-md hover:border-primary transition-all duration-200 ease-out"
       >
         VIEW ARCHIVE
       </button>
     </div>
   </main>
 
-  <!-- Lightbox Modal -->
   <Lightbox v-model="galleryStore.lightboxOpen" :src="galleryStore.lightboxSrc" />
 </template>
