@@ -197,7 +197,6 @@ export const useGalleryStore = defineStore('gallery', () => {
 
   const activeFilter = ref('all')
   const lightboxOpen = ref(false)
-  const lightboxSrc = ref('')
   const lightboxIndex = ref<number>(0)
 
   const filteredPhotos = computed(() => {
@@ -209,37 +208,12 @@ export const useGalleryStore = defineStore('gallery', () => {
     activeFilter.value = filter
   }
 
-  function openLightbox(src: string) {
-    const idx = filteredPhotos.value.findIndex(p => p.src === src)
-    lightboxIndex.value = idx >= 0 ? idx : 0
-    lightboxSrc.value = src
-    lightboxOpen.value = true
-  }
-
-  function nextPhoto() {
-    if (filteredPhotos.value.length === 0) return
-    lightboxIndex.value = (lightboxIndex.value + 1) % filteredPhotos.value.length
-    const next = filteredPhotos.value[lightboxIndex.value]
-    if (next) lightboxSrc.value = next.src
-  }
-
-  function prevPhoto() {
-    if (filteredPhotos.value.length === 0) return
-    lightboxIndex.value = (lightboxIndex.value - 1 + filteredPhotos.value.length) % filteredPhotos.value.length
-    const prev = filteredPhotos.value[lightboxIndex.value]
-    if (prev) lightboxSrc.value = prev.src
-  }
-
   return {
     photos,
     activeFilter,
     lightboxOpen,
-    lightboxSrc,
     lightboxIndex,
     filteredPhotos,
     setFilter,
-    openLightbox,
-    nextPhoto,
-    prevPhoto,
   }
 })

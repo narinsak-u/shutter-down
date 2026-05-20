@@ -9,6 +9,11 @@ defineOptions({ name: "GallerySection" });
 const galleryStore = useGalleryStore();
 const categories = ["all", "Architecture", "Nature", "Portrait"];
 
+const openPhoto = (index: number) => {
+  galleryStore.lightboxIndex = index;
+  galleryStore.lightboxOpen = true;
+};
+
 let observer: IntersectionObserver | null = null;
 
 const setupScrollReveal = () => {
@@ -57,7 +62,7 @@ watch(
 
 <template>
   <main
-    class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop min-h-screen"
+    class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop md:mx-10 min-h-screen"
   >
     <section class="mb-16 md:mb-20 max-w-2xl">
       <h2 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h2>
@@ -85,29 +90,25 @@ watch(
 
     <div class="masonry-grid" id="gallery">
       <GalleryItem
-        v-for="item in galleryStore.filteredPhotos"
+        v-for="(item, index) in galleryStore.filteredPhotos"
         :key="item.id"
         :src="item.src"
         :alt="item.alt"
         :location="item.location"
         :date="item.date"
         :type="item.type"
-        @click="galleryStore.openLightbox(item.src)"
+        @click="openPhoto(index)"
       />
     </div>
 
     <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
       <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
     </div>
-
-    <!-- <div class="mt-section-gap flex justify-center">
-      <button
-        class="px-12 py-4 border border-outline text-primary text-label-md font-label-md hover:border-primary transition-all duration-200 ease-out"
-      >
-        VIEW ARCHIVE
-      </button>
-    </div> -->
   </main>
 
-  <Lightbox v-model="galleryStore.lightboxOpen" />
+  <Lightbox
+    v-model="galleryStore.lightboxOpen"
+    :items="galleryStore.filteredPhotos"
+    v-model:index="galleryStore.lightboxIndex"
+  />
 </template>

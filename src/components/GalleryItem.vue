@@ -7,7 +7,7 @@ defineProps<{
   type: "portrait" | "landscape" | "square";
 }>();
 
-defineEmits(["click"]);
+defineEmits<{ click: [] }>();
 </script>
 
 <template>

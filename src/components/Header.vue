@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 
+defineOptions({ name: "AppHeader" });
+
 const isMenuOpen = ref(false);
 const scrollY = ref(0);
 

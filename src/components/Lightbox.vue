@@ -1,10 +1,40 @@
 <script setup lang="ts">
-import { watch, onUnmounted } from "vue";
-import { useGalleryStore } from "@/stores/gallery";
+import { computed, watch, onUnmounted } from "vue";
 
-const galleryStore = useGalleryStore();
+defineOptions({ name: "GalleryLightbox" });
 
+interface LightboxItem {
+  src: string;
+  alt?: string;
+}
+
+const props = withDefaults(defineProps<{ items: LightboxItem[] }>(), {
+  items: () => [],
+});
 const isOpen = defineModel<boolean>({ default: false });
+const index = defineModel<number>("index", { default: 0 });
+
+const currentSrc = computed(() => props.items[index.value]?.src ?? "");
+
+function next() {
+  if (props.items.length === 0) return;
+  index.value = (index.value + 1) % props.items.length;
+}
+
+function prev() {
+  if (props.items.length === 0) return;
+  index.value = (index.value - 1 + props.items.length) % props.items.length;
+}
+
+const close = () => {
+  isOpen.value = false;
+};
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === "ArrowLeft") prev();
+  else if (e.key === "ArrowRight") next();
+  else if (e.key === "Escape") close();
+}
 
 watch(isOpen, (newValue) => {
   if (newValue) {
@@ -19,16 +49,6 @@ watch(isOpen, (newValue) => {
 onUnmounted(() => {
   window.removeEventListener("keydown", handleKeydown);
 });
-
-function handleKeydown(e: KeyboardEvent) {
-  if (e.key === "ArrowLeft") galleryStore.prevPhoto();
-  else if (e.key === "ArrowRight") galleryStore.nextPhoto();
-  else if (e.key === "Escape") close();
-}
-
-const close = () => {
-  isOpen.value = false;
-};
 </script>
 
 <template>
@@ -45,24 +65,24 @@ const close = () => {
     </button>
 
     <button
-      v-if="galleryStore.filteredPhotos.length > 1"
+      v-if="items.length > 1"
       class="absolute left-4 cursor-pointer md:left-8 top-1/2 -translate-y-1/2 p-3 text-primary hover:opacity-60 transition-opacity duration-200 z-10"
-      @click="galleryStore.prevPhoto"
+      @click="prev"
       aria-label="Previous image"
     >
       <span class="material-symbols-outlined text-3xl">chevron_left</span>
     </button>
 
     <img
-      :src="galleryStore.lightboxSrc"
+      :src="currentSrc"
       class="max-h-full max-w-full object-contain p-container-margin-mobile md:p-container-margin-desktop"
-      alt="Expanded gallery image"
+      :alt="items[index]?.alt ?? 'Expanded gallery image'"
     />
 
     <button
-      v-if="galleryStore.filteredPhotos.length > 1"
+      v-if="items.length > 1"
       class="absolute right-4 cursor-pointer md:right-8 top-1/2 -translate-y-1/2 p-3 text-primary hover:opacity-60 transition-opacity duration-200 z-10"
-      @click="galleryStore.nextPhoto"
+      @click="next"
       aria-label="Next image"
     >
       <span class="material-symbols-outlined text-3xl">chevron_right</span>
