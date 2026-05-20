@@ -109,5 +109,5 @@ watch(
     </div> -->
   </main>
 
-  <Lightbox v-model="galleryStore.lightboxOpen" :src="galleryStore.lightboxSrc" />
+  <Lightbox v-model="galleryStore.lightboxOpen" />
 </template>
