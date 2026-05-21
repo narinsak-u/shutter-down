@@ -5,6 +5,7 @@ import { fetchPhotos as fetchContentfulPhotos } from '@/services/contentful'
 
 const PAGE_SIZE = 9
 
+/** Manages gallery state: photo list, pagination, filtering, and lightbox. */
 export const useGalleryStore = defineStore('gallery', () => {
   const photos = ref<Photo[]>([])
   const loading = ref(false)
@@ -25,6 +26,7 @@ export const useGalleryStore = defineStore('gallery', () => {
     activeFilter.value = filter
   }
 
+  /** Loads the first page of photos, resetting any existing data. */
   async function fetchPhotos() {
     loading.value = true
     error.value = null
@@ -42,6 +44,7 @@ export const useGalleryStore = defineStore('gallery', () => {
     }
   }
 
+  /** Appends the next page of photos. No-op if already loading or all loaded. */
   async function loadMore() {
     if (loadingMore.value || !hasMore.value) return
     loadingMore.value = true

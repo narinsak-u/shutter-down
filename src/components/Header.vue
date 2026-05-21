@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from "vue";
 
 defineOptions({ name: "AppHeader" });
 
+/** Page header with site title, navigation, and mobile menu toggle. */
 const isMenuOpen = ref(false);
 const scrollY = ref(0);
 

@@ -8,11 +8,13 @@ const client = contentful.createClient({
 
 const VALID_TYPES = new Set(["portrait", "landscape", "square"]);
 
+/** Validates and normalizes the photo type, falling back to "square" for unknown values. */
 function validateType(value: string): Photo["type"] {
   if (VALID_TYPES.has(value)) return value as Photo["type"];
   return "square";
 }
 
+/** Recursively extracts plain text from a Contentful Rich Text document tree. */
 function extractTextFromRichText(doc: unknown): string {
   if (!doc || typeof doc !== "object") return "";
 
@@ -30,12 +32,14 @@ function extractTextFromRichText(doc: unknown): string {
     .trim();
 }
 
+/** Extracts alt text from either a plain string or a Contentful Rich Text document. */
 function getAltText(alt: unknown): string {
   if (!alt) return "";
   if (typeof alt === "string") return alt;
   return extractTextFromRichText(alt);
 }
 
+/** Formats an ISO date string to "Month, Year" (e.g. "May, 2026"). Passes through invalid values. */
 function formatDate(raw: string): string {
   const date = new Date(raw);
   if (isNaN(date.getTime())) return raw;
@@ -43,11 +47,13 @@ function formatDate(raw: string): string {
   return `${month}, ${date.getFullYear()}`;
 }
 
+/** Result of a paginated Contentful fetch. */
 export interface FetchPhotosResult {
   photos: Photo[];
   total: number;
 }
 
+/** Fetches a page of gallery entries from Contentful, ordered by date descending. */
 export async function fetchPhotos(skip = 0, limit = 9): Promise<FetchPhotosResult> {
   const response = await client.getEntries({
     content_type: "gallery",

@@ -1,3 +1,4 @@
+/** A gallery photo entry, mapped from Contentful `gallery` entries. */
 export interface Photo {
   id: string;
   src: string;

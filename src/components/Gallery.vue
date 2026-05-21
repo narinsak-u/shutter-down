@@ -6,6 +6,7 @@ import Lightbox from "./Lightbox.vue";
 
 defineOptions({ name: "GallerySection" });
 
+/** Main gallery section: fetches photos, handles filtering, infinite scroll, and scroll-reveal animations. */
 const galleryStore = useGalleryStore();
 const categories = ["all", "Architecture", "Nature", "Portrait"];
 

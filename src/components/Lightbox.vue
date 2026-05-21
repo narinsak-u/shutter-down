@@ -3,6 +3,7 @@ import { computed, watch, onUnmounted } from "vue";
 
 defineOptions({ name: "GalleryLightbox" });
 
+/** Fullscreen image viewer with previous/next navigation and keyboard support. */
 interface LightboxItem {
   src: string;
   alt?: string;

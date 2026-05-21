@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/** Root application shell: renders the gallery and footer. */
 import Gallery from "./components/Gallery.vue";
 import Footer from "./components/Footer.vue";
 </script>
