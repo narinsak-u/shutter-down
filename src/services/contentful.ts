@@ -43,12 +43,20 @@ function formatDate(raw: string): string {
   return `${month}, ${date.getFullYear()}`;
 }
 
-export async function fetchPhotos(): Promise<Photo[]> {
+export interface FetchPhotosResult {
+  photos: Photo[];
+  total: number;
+}
+
+export async function fetchPhotos(skip = 0, limit = 9): Promise<FetchPhotosResult> {
   const response = await client.getEntries({
     content_type: "gallery",
+    limit,
+    skip,
+    order: ["-fields.date"],
   });
 
-  return response.items.map((entry) => {
+  const photos = response.items.map((entry) => {
     const fields = entry.fields as Record<string, unknown>;
     const srcField = fields.src as
       | { fields?: { file?: { url?: string } } }
@@ -65,4 +73,6 @@ export async function fetchPhotos(): Promise<Photo[]> {
       category: fields.category as string,
     };
   });
+
+  return { photos, total: response.total };
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockGetEntries = vi.fn<(query?: unknown) => Promise<{ items: unknown[] }>>()
+const mockGetEntries = vi.fn<(query?: unknown) => Promise<{ items: unknown[]; total: number }>>()
 
 vi.mock('contentful', () => ({
   createClient: vi.fn<(config?: unknown) => unknown>(() => ({
@@ -34,7 +34,7 @@ const mockEntry = (overrides: Record<string, unknown> = {}) => ({
   fields: {
     location: 'Paris, FR',
     alt: makeRichText('A beautiful photo'),
-      date: 'January, 2024',
+    date: 'January, 2024',
     type: 'portrait',
     category: 'Architecture',
     src: {
@@ -52,44 +52,50 @@ describe('contentful service', () => {
   })
 
   it('fetches and maps gallery entries to Photo[]', async () => {
-    mockGetEntries.mockResolvedValue({ items: [mockEntry()] })
+    mockGetEntries.mockResolvedValue({ items: [mockEntry()], total: 1 })
 
-    const photos = await fetchPhotos()
+    const result = await fetchPhotos()
 
-    expect(photos).toHaveLength(1)
-    expect(photos[0]).toEqual({
+    expect(result.photos).toHaveLength(1)
+    expect(result.total).toBe(1)
+    expect(result.photos[0]).toEqual({
       id: 'entry-1',
       src: 'https://images.ctfassets.net/abc/photo.jpg',
       alt: 'A beautiful photo',
       location: 'Paris, FR',
-    date: 'January, 2024',
+      date: 'January, 2024',
       type: 'portrait',
       category: 'Architecture',
     })
   })
 
-  it('uses correct content type', async () => {
-    mockGetEntries.mockResolvedValue({ items: [] })
+  it('uses correct content type, limit, skip, and order params', async () => {
+    mockGetEntries.mockResolvedValue({ items: [], total: 0 })
 
-    await fetchPhotos()
+    await fetchPhotos(3, 9)
 
-    expect(mockGetEntries).toHaveBeenCalledWith({ content_type: 'gallery' })
+    expect(mockGetEntries).toHaveBeenCalledWith({
+      content_type: 'gallery',
+      limit: 9,
+      skip: 3,
+      order: ['-fields.date'],
+    })
   })
 
   it('handles missing image gracefully', async () => {
-    mockGetEntries.mockResolvedValue({ items: [mockEntry({ src: undefined })] })
+    mockGetEntries.mockResolvedValue({ items: [mockEntry({ src: undefined })], total: 1 })
 
-    const photos = await fetchPhotos()
+    const result = await fetchPhotos()
 
-    expect(photos[0]?.src).toBe('')
+    expect(result.photos[0]?.src).toBe('')
   })
 
   it('falls back type to square for invalid values', async () => {
-    mockGetEntries.mockResolvedValue({ items: [mockEntry({ type: 'panorama' })] })
+    mockGetEntries.mockResolvedValue({ items: [mockEntry({ type: 'panorama' })], total: 1 })
 
-    const photos = await fetchPhotos()
+    const result = await fetchPhotos()
 
-    expect(photos[0]?.type).toBe('square')
+    expect(result.photos[0]?.type).toBe('square')
   })
 
   it('throws when client fails', async () => {

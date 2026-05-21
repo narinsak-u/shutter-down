@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Photo } from '@/types/gallery'
-import { fetchPhotos } from '@/services/contentful'
+import { fetchPhotos as fetchContentfulPhotos } from '@/services/contentful'
+
+const PAGE_SIZE = 9
 
 export const useGalleryStore = defineStore('gallery', () => {
   const photos = ref<Photo[]>([])
   const loading = ref(false)
+  const loadingMore = ref(false)
   const error = ref<string | null>(null)
+  const hasMore = ref(true)
+  const skip = ref(0)
   const activeFilter = ref('all')
   const lightboxOpen = ref(false)
   const lightboxIndex = ref<number>(0)
@@ -20,11 +25,16 @@ export const useGalleryStore = defineStore('gallery', () => {
     activeFilter.value = filter
   }
 
-  async function fetchAllPhotos() {
+  async function fetchPhotos() {
     loading.value = true
     error.value = null
+    skip.value = 0
+    hasMore.value = true
     try {
-      photos.value = await fetchPhotos()
+      const result = await fetchContentfulPhotos(0, PAGE_SIZE)
+      photos.value = result.photos
+      hasMore.value = skip.value + result.photos.length < result.total
+      skip.value = result.photos.length
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load photos'
     } finally {
@@ -32,15 +42,33 @@ export const useGalleryStore = defineStore('gallery', () => {
     }
   }
 
+  async function loadMore() {
+    if (loadingMore.value || !hasMore.value) return
+    loadingMore.value = true
+    try {
+      const result = await fetchContentfulPhotos(skip.value, PAGE_SIZE)
+      photos.value = [...photos.value, ...result.photos]
+      hasMore.value = skip.value + result.photos.length < result.total
+      skip.value += result.photos.length
+    } catch {
+      // silent fail for scroll-triggered loads
+    } finally {
+      loadingMore.value = false
+    }
+  }
+
   return {
     photos,
     loading,
+    loadingMore,
     error,
+    hasMore,
     activeFilter,
     lightboxOpen,
     lightboxIndex,
     filteredPhotos,
     setFilter,
-    fetchAllPhotos,
+    fetchPhotos,
+    loadMore,
   }
 })
