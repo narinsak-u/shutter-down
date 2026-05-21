@@ -24,7 +24,7 @@ const IntersectionObserverMock = vi.fn<
 vi.stubGlobal('IntersectionObserver', IntersectionObserverMock)
 
 vi.mock('@/services/contentful', () => ({
-  fetchPhotos: vi.fn().mockResolvedValue([]),
+  fetchPhotos: vi.fn<() => Promise<unknown[]>>().mockResolvedValue([]),
 }))
 
 describe('App', () => {
