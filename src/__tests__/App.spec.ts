@@ -23,6 +23,10 @@ const IntersectionObserverMock = vi.fn<
 
 vi.stubGlobal('IntersectionObserver', IntersectionObserverMock)
 
+vi.mock('@/services/contentful', () => ({
+  fetchPhotos: vi.fn().mockResolvedValue([]),
+}))
+
 describe('App', () => {
   it('renders the gallery headline', () => {
     setActivePinia(createPinia())
