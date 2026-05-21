@@ -43,6 +43,7 @@ const setupScrollReveal = () => {
 };
 
 onMounted(() => {
+  galleryStore.fetchAllPhotos();
   setupScrollReveal();
 });
 
@@ -88,6 +89,24 @@ watch(
       </button>
     </nav>
 
+    <p v-if="galleryStore.loading" class="text-center py-20 text-body-lg font-body-lg text-secondary">
+      Loading...
+    </p>
+
+    <div
+      v-else-if="galleryStore.error"
+      class="text-center py-20"
+    >
+      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+      <button
+        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        @click="galleryStore.fetchAllPhotos()"
+      >
+        Retry
+      </button>
+    </div>
+
+    <template v-if="!galleryStore.loading && !galleryStore.error">
     <TransitionGroup
       name="gallery"
       tag="div"
@@ -110,6 +129,7 @@ watch(
     <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
       <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
     </div>
+    </template>
   </main>
 
   <Lightbox
