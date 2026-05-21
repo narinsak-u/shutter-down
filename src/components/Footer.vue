@@ -13,5 +13,9 @@ const year = new Date().getFullYear();
     >
       Vue
     </a>
+    +
+    <a href="https://contentful.com/" class="hover:text-primary transition-colors duration-200">
+      Contentful
+    </a>
   </footer>
 </template>

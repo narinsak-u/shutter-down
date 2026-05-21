@@ -15,10 +15,16 @@ const openPhoto = (index: number) => {
   galleryStore.lightboxOpen = true;
 };
 
+/** Reference to the sentinel element at the end of the gallery—used to trigger infinite scroll. */
 const sentinelRef = ref<HTMLElement | null>(null);
+
+/** IntersectionObserver instance for scroll-reveal animation on gallery items. */
 let observer: IntersectionObserver | null = null;
+
+/** IntersectionObserver instance for infinite scroll—detects when sentinel reaches viewport. */
 let loadMoreObserver: IntersectionObserver | null = null;
 
+/** Sets up infinite scroll: loads more photos when sentinel enters viewport with 200px margin. */
 const setupLoadMore = () => {
   if (loadMoreObserver) loadMoreObserver.disconnect();
   const el = sentinelRef.value;
@@ -34,6 +40,7 @@ const setupLoadMore = () => {
   loadMoreObserver.observe(el);
 };
 
+/** Sets up scroll-reveal animations: staggered fade-in and slide-up effect for gallery items as they enter viewport. */
 const setupScrollReveal = () => {
   if (observer) observer.disconnect();
 
@@ -60,16 +67,19 @@ const setupScrollReveal = () => {
   });
 };
 
+/** Initializes gallery on component mount: fetches photos and sets up scroll-reveal animations. */
 onMounted(() => {
   galleryStore.fetchPhotos();
   setupScrollReveal();
 });
 
+/** Cleans up observers on component unmount to prevent memory leaks. */
 onUnmounted(() => {
   if (observer) observer.disconnect();
   if (loadMoreObserver) loadMoreObserver.disconnect();
 });
 
+/** Watches filtered photos: re-runs scroll-reveal and infinite scroll setup when filter changes or photos load. */
 watch(
   () => galleryStore.filteredPhotos,
   async () => {
