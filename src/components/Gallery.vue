@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, nextTick } from "vue";
+import { onMounted, onUnmounted, watch, nextTick, ref } from "vue";
 import { useGalleryStore } from "@/stores/gallery";
 import GalleryItem from "./GalleryItem.vue";
 import Lightbox from "./Lightbox.vue";
 
 defineOptions({ name: "GallerySection" });
 
+/** Main gallery section: fetches photos, handles filtering, infinite scroll, and scroll-reveal animations. */
 const galleryStore = useGalleryStore();
 const categories = ["all", "Architecture", "Nature", "Portrait"];
 
@@ -14,7 +15,24 @@ const openPhoto = (index: number) => {
   galleryStore.lightboxOpen = true;
 };
 
+const sentinelRef = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
+let loadMoreObserver: IntersectionObserver | null = null;
+
+const setupLoadMore = () => {
+  if (loadMoreObserver) loadMoreObserver.disconnect();
+  const el = sentinelRef.value;
+  if (!el) return;
+  loadMoreObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (entry?.isIntersecting && galleryStore.hasMore && !galleryStore.loadingMore) {
+        galleryStore.loadMore();
+      }
+    },
+    { rootMargin: "200px" },
+  );
+  loadMoreObserver.observe(el);
+};
 
 const setupScrollReveal = () => {
   if (observer) observer.disconnect();
@@ -43,11 +61,13 @@ const setupScrollReveal = () => {
 };
 
 onMounted(() => {
+  galleryStore.fetchPhotos();
   setupScrollReveal();
 });
 
 onUnmounted(() => {
   if (observer) observer.disconnect();
+  if (loadMoreObserver) loadMoreObserver.disconnect();
 });
 
 watch(
@@ -55,6 +75,7 @@ watch(
   async () => {
     await nextTick();
     setupScrollReveal();
+    setupLoadMore();
   },
   { deep: true },
 );
@@ -65,8 +86,8 @@ watch(
     class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop md:mx-10 min-h-screen"
   >
     <section class="mb-16 md:mb-20 max-w-2xl">
-      <h2 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h2>
-      <p class="text-body-lg font-body-lg text-secondary max-w-xl">
+      <h2 class="text-headline-xl font-pacifico text-primary mb-6">Eyes up, shutter down. 📷</h2>
+      <p class="text-body-md font-body-md text-secondary max-w-xl">
         Walk around, frame the shot, and immediately move on to the next thing without overthinking
         it.
       </p>
@@ -88,28 +109,56 @@ watch(
       </button>
     </nav>
 
-    <TransitionGroup
-      name="gallery"
-      tag="div"
-      class="masonry-grid"
-      id="gallery"
-      @enter="(el: Element) => el.classList.remove('opacity-0', 'translate-y-8')"
+    <p
+      v-if="galleryStore.loading"
+      class="text-center py-20 text-body-lg font-body-lg text-secondary"
     >
-      <GalleryItem
-        v-for="(item, index) in galleryStore.filteredPhotos"
-        :key="item.id"
-        :src="item.src"
-        :alt="item.alt"
-        :location="item.location"
-        :date="item.date"
-        :type="item.type"
-        @click="openPhoto(index)"
-      />
-    </TransitionGroup>
+      Loading...
+    </p>
 
-    <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
-      <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
+    <div v-else-if="galleryStore.error" class="text-center py-20">
+      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+      <button
+        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        @click="galleryStore.fetchPhotos()"
+      >
+        Retry
+      </button>
     </div>
+
+    <template v-if="!galleryStore.loading && !galleryStore.error">
+      <TransitionGroup
+        name="gallery"
+        tag="div"
+        class="masonry-grid"
+        id="gallery"
+        @enter="(el: Element) => el.classList.remove('opacity-0', 'translate-y-8')"
+      >
+        <GalleryItem
+          v-for="(item, index) in galleryStore.filteredPhotos"
+          :key="item.id"
+          :src="item.src"
+          :alt="item.alt"
+          :location="item.location"
+          :date="item.date"
+          :type="item.type"
+          @click="openPhoto(index)"
+        />
+      </TransitionGroup>
+
+      <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
+        <p class="text-sm font-semibold text-secondary">No time to shoot.</p>
+      </div>
+
+      <div ref="sentinelRef" v-if="galleryStore.hasMore" class="h-px" />
+
+      <p
+        v-if="galleryStore.loadingMore"
+        class="text-center py-8 text-body-lg font-body-lg text-secondary"
+      >
+        Loading more...
+      </p>
+    </template>
   </main>
 
   <Lightbox

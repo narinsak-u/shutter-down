@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/** A single photo card with image, location, and date. Emits `click` to open the lightbox. */
 defineProps<{
   src: string;
   alt: string;
