@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
 
 @theme {
   --color-surface: #ffffff;
@@ -78,8 +79,8 @@
 }
 
 @utility text-headline-xl {
-  font-size: 40px;
-  line-height: 1.2;
+  font-size: 50px;
+  line-height: 1.5;
   letter-spacing: -0.02em;
   font-weight: 600;
 }
@@ -141,6 +142,10 @@
   font-family: "Geist", sans-serif;
 }
 
+@utility font-pacifico {
+  font-family: "Pacifico", serif;
+}
+
 @font-face {
   font-family: "Geist";
   src: url("https://cdn.jsdelivr.net/npm/geist@1.0.3/dist/fonts/geist-sans/Geist-Regular.woff2")
@@ -195,7 +200,9 @@ body {
 .gallery-item {
   break-inside: avoid;
   margin-bottom: 24px;
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  transition:
+    opacity 0.3s ease-out,
+    transform 0.3s ease-out;
 }
 
 /* Gallery TransitionGroup — filter changes */
@@ -210,11 +217,15 @@ body {
 
 /* Lightbox Transition — open/close */
 .lightbox-enter-active {
-  transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+  transition:
+    opacity 0.35s ease-out,
+    transform 0.35s ease-out;
 }
 
 .lightbox-leave-active {
-  transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+  transition:
+    opacity 0.3s ease-in,
+    transform 0.3s ease-in;
 }
 
 .lightbox-enter-from {

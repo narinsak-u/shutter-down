@@ -85,8 +85,8 @@ watch(
     class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop md:mx-10 min-h-screen"
   >
     <section class="mb-16 md:mb-20 max-w-2xl">
-      <h2 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h2>
-      <p class="text-body-lg font-body-lg text-secondary max-w-xl">
+      <h2 class="text-headline-xl font-pacifico text-primary mb-6">Eyes up, shutter down. 📷</h2>
+      <p class="text-body-md font-body-md text-secondary max-w-xl">
         Walk around, frame the shot, and immediately move on to the next thing without overthinking
         it.
       </p>
@@ -146,7 +146,7 @@ watch(
       </TransitionGroup>
 
       <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
-        <p class="text-body-lg font-body-lg text-secondary">No images in this category yet.</p>
+        <p class="text-sm font-semibold text-secondary">No time to shoot.</p>
       </div>
 
       <div ref="sentinelRef" v-if="galleryStore.hasMore" class="h-px" />
