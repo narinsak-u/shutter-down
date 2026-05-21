@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockGetEntries = vi.fn()
+const mockGetEntries = vi.fn<(query?: unknown) => Promise<{ items: unknown[] }>>()
 
 vi.mock('contentful', () => ({
-  createClient: vi.fn(() => ({
+  createClient: vi.fn<(config?: unknown) => unknown>(() => ({
     withoutUnresolvableLinks: { getEntries: mockGetEntries },
   })),
 }))
