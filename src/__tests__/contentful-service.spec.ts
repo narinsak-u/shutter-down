@@ -4,21 +4,40 @@ const mockGetEntries = vi.fn<(query?: unknown) => Promise<{ items: unknown[] }>>
 
 vi.mock('contentful', () => ({
   createClient: vi.fn<(config?: unknown) => unknown>(() => ({
-    withoutUnresolvableLinks: { getEntries: mockGetEntries },
+    getEntries: mockGetEntries,
   })),
 }))
 
 const { fetchPhotos } = await import('@/services/contentful')
 
+const makeRichText = (text: string) => ({
+  data: {},
+  content: [
+    {
+      data: {},
+      content: [
+        {
+          data: {},
+          marks: [],
+          value: text,
+          nodeType: 'text',
+        },
+      ],
+      nodeType: 'paragraph',
+    },
+  ],
+  nodeType: 'document',
+})
+
 const mockEntry = (overrides: Record<string, unknown> = {}) => ({
   sys: { id: 'entry-1' },
   fields: {
     location: 'Paris, FR',
-    alt: 'A beautiful photo',
+    alt: makeRichText('A beautiful photo'),
     date: 'Jan 2024',
     type: 'portrait',
     category: 'Architecture',
-    image: {
+    src: {
       fields: {
         file: { url: '//images.ctfassets.net/abc/photo.jpg' },
       },
@@ -58,7 +77,7 @@ describe('contentful service', () => {
   })
 
   it('handles missing image gracefully', async () => {
-    mockGetEntries.mockResolvedValue({ items: [mockEntry({ image: undefined })] })
+    mockGetEntries.mockResolvedValue({ items: [mockEntry({ src: undefined })] })
 
     const photos = await fetchPhotos()
 

@@ -13,21 +13,45 @@ function validateType(value: string): Photo["type"] {
   return "square";
 }
 
+function extractTextFromRichText(doc: unknown): string {
+  if (!doc || typeof doc !== "object") return "";
+
+  const node = doc as Record<string, unknown>;
+  const content = node.content as Array<Record<string, unknown>> | undefined;
+
+  if (!content) {
+    const value = node.value;
+    return typeof value === "string" ? value : "";
+  }
+
+  return content
+    .map((child) => extractTextFromRichText(child))
+    .join(" ")
+    .trim();
+}
+
+function getAltText(alt: unknown): string {
+  if (!alt) return "";
+  if (typeof alt === "string") return alt;
+  return extractTextFromRichText(alt);
+}
+
 export async function fetchPhotos(): Promise<Photo[]> {
-  const response = await client.withoutUnresolvableLinks.getEntries({
+  const response = await client.getEntries({
     content_type: "gallery",
   });
 
   return response.items.map((entry) => {
     const fields = entry.fields as Record<string, unknown>;
-    const image = fields.image as
+    const srcField = fields.src as
       | { fields?: { file?: { url?: string } } }
       | undefined;
-    const imageUrl = image?.fields?.file?.url ?? "";
+    const imageUrl = srcField?.fields?.file?.url ?? "";
+
     return {
       id: entry.sys.id,
       src: imageUrl ? `https:${imageUrl}` : "",
-      alt: fields.alt as string,
+      alt: getAltText(fields.alt),
       location: fields.location as string,
       date: fields.date as string,
       type: validateType(fields.type as string),
