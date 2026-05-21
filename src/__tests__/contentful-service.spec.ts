@@ -34,7 +34,7 @@ const mockEntry = (overrides: Record<string, unknown> = {}) => ({
   fields: {
     location: 'Paris, FR',
     alt: makeRichText('A beautiful photo'),
-    date: 'Jan 2024',
+      date: 'January, 2024',
     type: 'portrait',
     category: 'Architecture',
     src: {
@@ -62,7 +62,7 @@ describe('contentful service', () => {
       src: 'https://images.ctfassets.net/abc/photo.jpg',
       alt: 'A beautiful photo',
       location: 'Paris, FR',
-      date: 'Jan 2024',
+    date: 'January, 2024',
       type: 'portrait',
       category: 'Architecture',
     })

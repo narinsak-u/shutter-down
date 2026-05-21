@@ -36,6 +36,13 @@ function getAltText(alt: unknown): string {
   return extractTextFromRichText(alt);
 }
 
+function formatDate(raw: string): string {
+  const date = new Date(raw);
+  if (isNaN(date.getTime())) return raw;
+  const month = date.toLocaleDateString("en-US", { month: "long" });
+  return `${month}, ${date.getFullYear()}`;
+}
+
 export async function fetchPhotos(): Promise<Photo[]> {
   const response = await client.getEntries({
     content_type: "gallery",
@@ -53,7 +60,7 @@ export async function fetchPhotos(): Promise<Photo[]> {
       src: imageUrl ? `https:${imageUrl}` : "",
       alt: getAltText(fields.alt),
       location: fields.location as string,
-      date: fields.date as string,
+      date: formatDate(fields.date as string),
       type: validateType(fields.type as string),
       category: fields.category as string,
     };
