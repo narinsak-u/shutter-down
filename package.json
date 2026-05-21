@@ -15,6 +15,7 @@
     "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
+    "contentful": "^11.12.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"
