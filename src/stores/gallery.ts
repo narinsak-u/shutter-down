@@ -1,15 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-
-export interface Photo {
-  id: string;
-  src: string;
-  alt: string;
-  location: string;
-  date: string;
-  type: 'portrait' | 'landscape' | 'square';
-  category: string;
-}
+import type { Photo } from '@/types/gallery'
 
 export const useGalleryStore = defineStore('gallery', () => {
   const photos = ref<Photo[]>([
