@@ -17,12 +17,73 @@ const openPhoto = (index: number) => {
 
 /** Reference to the sentinel element at the end of the gallery—used to trigger infinite scroll. */
 const sentinelRef = ref<HTMLElement | null>(null);
+const MASONRY_GAP = 24;
+const pendingImageLoads = new WeakSet<HTMLImageElement>();
 
 /** IntersectionObserver instance for scroll-reveal animation on gallery items. */
 let observer: IntersectionObserver | null = null;
 
 /** IntersectionObserver instance for infinite scroll—detects when sentinel reaches viewport. */
 let loadMoreObserver: IntersectionObserver | null = null;
+
+function getColumnCount(): number {
+  const width = window.innerWidth;
+  if (width <= 400) return 1;
+  if (width <= 600) return 2;
+  if (width <= 900) return 3;
+  return 4;
+}
+
+/** Excludes filtered-out cards that TransitionGroup keeps during its leave animation. */
+function getActiveGalleryItems(grid: HTMLElement): HTMLElement[] {
+  const activeIds = new Set(galleryStore.filteredPhotos.map((photo) => photo.id));
+  return [...grid.querySelectorAll<HTMLElement>(".gallery-item")].filter((item) =>
+    activeIds.has(item.dataset.photoId ?? ""),
+  );
+}
+
+/** Places cards in source order into the shortest column using their rendered heights. */
+function layoutMasonry(): void {
+  const grid = document.getElementById("gallery");
+  if (!grid) return;
+
+  const items = getActiveGalleryItems(grid);
+  if (!items.length) {
+    grid.style.height = "0px";
+    return;
+  }
+
+  const columns = getColumnCount();
+  const columnWidth = (grid.clientWidth - MASONRY_GAP * (columns - 1)) / columns;
+  if (columnWidth <= 0) return;
+
+  const columnHeights = Array.from({ length: columns }, () => 0);
+
+  items.forEach((item) => {
+    item.style.width = `${columnWidth}px`;
+
+    const image = item.querySelector("img");
+    if (image && !image.complete && !pendingImageLoads.has(image)) {
+      pendingImageLoads.add(image);
+      image.addEventListener("load", () => {
+        pendingImageLoads.delete(image);
+        layoutMasonry();
+      }, { once: true });
+    }
+
+    let column = 0;
+    for (let index = 1; index < columnHeights.length; index += 1) {
+      if ((columnHeights[index] ?? 0) < (columnHeights[column] ?? 0)) column = index;
+    }
+
+    const top = columnHeights[column] ?? 0;
+    item.style.left = `${column * (columnWidth + MASONRY_GAP)}px`;
+    item.style.top = `${top}px`;
+    columnHeights[column] = top + item.offsetHeight + MASONRY_GAP;
+  });
+
+  grid.style.height = `${Math.max(...columnHeights) - MASONRY_GAP}px`;
+}
 
 /** Sets up infinite scroll: loads more photos when sentinel enters viewport with 200px margin. */
 const setupLoadMore = () => {
@@ -61,7 +122,10 @@ const setupScrollReveal = () => {
     { threshold: 0.1 },
   );
 
-  const items = document.querySelectorAll(".gallery-item");
+  const grid = document.getElementById("gallery");
+  if (!grid) return;
+
+  const items = getActiveGalleryItems(grid);
   items.forEach((item) => {
     observer?.observe(item);
   });
@@ -70,6 +134,7 @@ const setupScrollReveal = () => {
 /** Initializes gallery on component mount: fetches photos and sets up scroll-reveal animations. */
 onMounted(() => {
   galleryStore.fetchPhotos();
+  window.addEventListener("resize", layoutMasonry);
   setupScrollReveal();
 });
 
@@ -77,6 +142,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) observer.disconnect();
   if (loadMoreObserver) loadMoreObserver.disconnect();
+  window.removeEventListener("resize", layoutMasonry);
 });
 
 /** Watches filtered photos: re-runs scroll-reveal and infinite scroll setup when filter changes or photos load. */
@@ -84,6 +150,7 @@ watch(
   () => galleryStore.filteredPhotos,
   async () => {
     await nextTick();
+    layoutMasonry();
     setupScrollReveal();
     setupLoadMore();
   },
@@ -140,7 +207,7 @@ watch(
       <TransitionGroup
         name="gallery"
         tag="div"
-        class="masonry-grid"
+        class="gallery-grid"
         id="gallery"
         @enter="(el: Element) => el.classList.remove('opacity-0', 'translate-y-8')"
       >
@@ -152,7 +219,7 @@ watch(
           :alt="item.alt"
           :location="item.location"
           :date="item.date"
-          :type="item.type"
+          :data-photo-id="item.id"
           @click="openPhoto(index)"
         />
       </TransitionGroup>

@@ -184,29 +184,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.masonry-grid {
-  columns: 3;
-  column-gap: 24px;
-}
-
-@media (max-width: 900px) {
-  .masonry-grid {
-    columns: 2;
-  }
-}
-
-@media (max-width: 600px) {
-  .masonry-grid {
-    columns: 1;
-  }
+.gallery-grid {
+  position: relative;
 }
 
 .gallery-item {
-  break-inside: avoid;
-  margin-bottom: 24px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   transition:
     opacity 0.3s ease-out,
     transform 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  main {
+    animation: none;
+  }
 }
 
 /* Gallery TransitionGroup — filter changes */

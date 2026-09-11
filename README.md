@@ -65,5 +65,5 @@ VITE_CONTENTFUL_ACCESS_TOKEN=your_contentful_cda_token
 - **Infinite scroll** — photos load in pages of 9 as you scroll
 - **Category filtering** — filter by Architecture, Nature, Portrait
 - **Lightbox** — fullscreen image viewer with keyboard navigation
-- **Masonry layout** — CSS columns-based responsive grid
+- **Pinterest-style gallery** — row-major shortest-column placement with one to four columns
 - **Scroll reveal** — items fade in as they enter the viewport

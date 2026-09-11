@@ -6,7 +6,6 @@ defineProps<{
   alt: string;
   location: string;
   date: string;
-  type: "portrait" | "landscape" | "square";
 }>();
 
 defineEmits<{ click: [] }>();

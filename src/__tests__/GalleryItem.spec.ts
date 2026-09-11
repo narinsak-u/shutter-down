@@ -11,7 +11,6 @@ describe('GalleryItem', () => {
     alt: 'A test photo',
     location: 'Paris, FR',
     date: 'May, 2026',
-    type: 'landscape' as const,
   }
 
   it('renders the thumbSrc as image src', () => {
@@ -25,4 +24,5 @@ describe('GalleryItem', () => {
     expect(wrapper.text()).toContain('Paris, FR')
     expect(wrapper.text()).toContain('May, 2026')
   })
+
 })
