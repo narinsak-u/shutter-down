@@ -19,24 +19,24 @@ A minimalist photography portfolio gallery (Vue 3 + Contentful CMS). Photos load
 ## Commands
 | Command | Action |
 |---|---|
-| `npm run dev` | Start dev server (Vite) |
-| `npm run build` | Type-check + build |
-| `npm run build-only` | Build without type-check |
-| `npm run type-check` | `vue-tsc --build` |
-| `npm run preview` | Preview production build |
-| `npm run test:unit` | Run all unit tests (Vitest) |
-| `npm run lint` | oxlint + ESLint with --fix |
-| `npm run lint:oxlint` | oxlint . --fix |
-| `npm run lint:eslint` | ESLint . --fix --cache |
+| `bun run dev` | Start dev server (Vite) |
+| `bun run build` | Type-check + build |
+| `bun run build-only` | Build without type-check |
+| `bun run type-check` | `vue-tsc --build` |
+| `bun run preview` | Preview production build |
+| `bun run test:unit` | Run all unit tests (Vitest) |
+| `bun run lint` | oxlint + ESLint with --fix |
+| `bun run lint:oxlint` | oxlint . --fix |
+| `bun run lint:eslint` | ESLint . --fix --cache |
 
 ### Running a single test
 ```sh
-npx vitest run src/__tests__/Gallery.spec.ts
-npx vitest run src/__tests__/Gallery.spec.ts --reporter=verbose
+bunx vitest run src/__tests__/Gallery.spec.ts
+bunx vitest run src/__tests__/Gallery.spec.ts --reporter=verbose
 ```
 ### Watch mode
 ```sh
-npx vitest src/__tests__/Gallery.spec.ts
+bunx vitest src/__tests__/Gallery.spec.ts
 ```
 
 ## Project Structure
@@ -55,7 +55,7 @@ src/
 
 ## CI (GitHub Actions)
 - Runs on push/PR to `main`
-- Steps: `npm ci` → `npm run test:unit` → `npm run build` → deploy to GitHub Pages
+- Steps: `bun install --frozen-lockfile` → `bun run test:unit` → `bun run build` → deploy to GitHub Pages
 - Requires secrets: `VITE_CONTENTFUL_SPACE`, `VITE_CONTENTFUL_ACCESS_TOKEN`, `GH_TOKEN`
 
 ## Code Style

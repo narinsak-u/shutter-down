@@ -52,13 +52,13 @@ VITE_CONTENTFUL_ACCESS_TOKEN=your_contentful_cda_token
 
 | Command | Action |
 |---------|--------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Type-check + production build |
-| `npm run build-only` | Build without type-check |
-| `npm run type-check` | Run `vue-tsc --build` |
-| `npm run preview` | Preview production build |
-| `npm run test:unit` | Run unit tests (Vitest) |
-| `npm run lint` | Run oxlint + ESLint |
+| `bun run dev` | Start dev server |
+| `bun run build` | Type-check + production build |
+| `bun run build-only` | Build without type-check |
+| `bun run type-check` | Run `vue-tsc --build` |
+| `bun run preview` | Preview production build |
+| `bun run test:unit` | Run unit tests (Vitest) |
+| `bun run lint` | Run oxlint + ESLint |
 
 ## Features
 
