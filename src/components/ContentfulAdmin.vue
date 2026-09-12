@@ -7,6 +7,7 @@ defineOptions({ name: "ContentfulAdmin" });
 const props = defineProps<{ sdk: PageAppSDK }>();
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const categories = ["Architecture", "Nature", "Portrait"];
 const selectedFile = ref<File | null>(null);
 const previewUrl = ref("");
 const fileError = ref("");
@@ -16,11 +17,7 @@ const uploading = ref(false);
 const progress = ref(0);
 const phase = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
-const form = reactive({ location: "", date: "" });
-
-function getFileLabel(fileName: string): string {
-  return fileName.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ");
-}
+const form = reactive({ location: "", date: "", category: "", alt: "" });
 
 function getPhotoType(asset: Asset, locale: string): "portrait" | "landscape" | "square" {
   const details = asset.fields.file[locale]?.details as
@@ -123,8 +120,8 @@ async function submit(): Promise<void> {
         location: { [locale]: form.location },
         date: { [locale]: form.date },
         type: { [locale]: getPhotoType(processed, locale) },
-        category: { [locale]: "Uncategorized" },
-        alt: { [locale]: altDocument(getFileLabel(selectedFile.value.name)) },
+        category: { [locale]: form.category },
+        alt: { [locale]: altDocument(form.alt) },
         src: { [locale]: { sys: { type: "Link", linkType: "Asset", id: publishedAsset.sys.id } } },
       },
     });
@@ -132,6 +129,8 @@ async function submit(): Promise<void> {
     progress.value = 100;
     form.location = "";
     form.date = "";
+    form.category = "";
+    form.alt = "";
     removeFile();
     success.value = "Photo published successfully.";
     props.sdk.notifier.success("Photo published");
@@ -183,6 +182,20 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <div class="grid gap-7 md:grid-cols-2">
+          <div>
+            <label for="contentful-photo-category" class="text-label-sm font-label-sm text-primary">Category</label>
+            <select id="contentful-photo-category" v-model="form.category" required class="mt-2 w-full rounded-md border border-outline-variant bg-surface px-4 py-3 outline-none focus:border-primary">
+              <option value="" disabled>Select a category</option>
+              <option v-for="category in categories" :key="category" :value="category">{{ category }}</option>
+            </select>
+          </div>
+          <div>
+            <label for="contentful-photo-alt" class="text-label-sm font-label-sm text-primary">Alt text</label>
+            <textarea id="contentful-photo-alt" v-model="form.alt" required rows="1" class="mt-2 w-full resize-y rounded-md border border-outline-variant px-4 py-3 outline-none focus:border-primary" placeholder="Describe the image"></textarea>
+          </div>
+        </div>
+
         <div>
           <p class="text-label-sm font-label-sm text-primary">Image</p>
           <button v-if="!selectedFile" type="button" class="mt-2 flex min-h-64 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant bg-surface-bright px-6 text-center hover:border-primary" @click="fileInput?.click()" @dragover.prevent @drop="dropFile">
@@ -209,7 +222,7 @@ onUnmounted(() => {
         </div>
         <p v-if="error" class="text-label-md font-label-md text-error" role="alert">{{ error }}</p>
         <p v-if="success" class="text-label-md font-label-md text-green-700" role="status">{{ success }}</p>
-        <button type="submit" class="w-full rounded-md bg-primary px-5 py-4 text-label-md font-label-md text-on-primary disabled:cursor-not-allowed disabled:opacity-50" :disabled="uploading || !selectedFile || !form.location || !form.date">
+        <button type="submit" class="w-full rounded-md bg-primary px-5 py-4 text-label-md font-label-md text-on-primary disabled:cursor-not-allowed disabled:opacity-50" :disabled="uploading || !selectedFile || !form.location || !form.date || !form.category || !form.alt">
           {{ uploading ? "Publishing..." : "Upload to Contentful" }}
         </button>
       </form>
