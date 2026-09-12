@@ -1,72 +1,17 @@
-# Eyes Up, Shutter Down
+# Eyes up, Shutter down 📷
 
-A minimalist photography portfolio gallery built with Vue 3, powered by Contentful CMS.
+![Eyes up, Shutter down photography portfolio](public/og.png)
 
-## Tech Stack
+A personal collection of photographs made while walking around, framing the shot, and moving on without overthinking it.
 
-- **Framework:** Vue 3 (Composition API, `<script setup lang="ts">`)
-- **Language:** TypeScript ~6.0
-- **Routing:** Vue Router 5
-- **State:** Pinia (composition stores)
-- **Styling:** Tailwind CSS v4 + PostCSS
-- **CMS:** Contentful (Content Delivery API)
-- **Build:** Vite 8
-- **Testing:** Vitest 4 + jsdom + Vue Test Utils
-- **Linting:** ESLint 10 + oxlint 1.60
-- **Type-checking:** vue-tsc 3
-- **Node:** ^20.19.0 \|\| >=22.12.0
+[View the gallery](https://narinsak-u.github.io/shutter-down/)
 
-## Project Structure
+## The collection ✨
 
-```
-src/
-  __tests__/        # Unit tests
-  components/       # Vue components (Gallery, GalleryItem, Lightbox, Footer)
-  router/           # Vue Router setup
-  services/         # Contentful API integration
-  stores/           # Pinia store (gallery)
-  types/            # Shared TypeScript interfaces
-  App.vue           # Root component
-  main.ts           # App entry point
-  style.css         # Global styles, Tailwind theme, design tokens
-```
+🏙️ Architecture · 🌿 Nature · 🧍 Portraits · 🌤️ Quiet moments
 
-## Workflow
+Photos appear in the order they were taken, with new frames arriving over time.
 
-Content is managed in **Contentful** via the `gallery` content type with fields: `location`, `alt` (Rich Text), `date`, `type` (portrait/landscape/square), `category`, and `src` (Media asset). The app fetches data from Contentful's Delivery API in pages of 9, ordered by date descending, with infinite scroll for loading more.
+## Stay curious
 
-### Environment Setup
-
-```sh
-cp .env.example .env
-```
-
-Set your Contentful credentials in `.env`:
-
-```
-VITE_CONTENTFUL_SPACE=your_contentful_space_id
-VITE_CONTENTFUL_ACCESS_TOKEN=your_contentful_cda_token
-```
-
-The uploader is a Contentful App Framework Page app. In Contentful, create an App Definition with the GitHub Pages URL as its source, enable the Page location, install it in the target space environment, and open its page from Contentful.
-
-### Commands
-
-| Command | Action |
-|---------|--------|
-| `bun run dev` | Start dev server |
-| `bun run build` | Type-check + production build |
-| `bun run build-only` | Build without type-check |
-| `bun run type-check` | Run `vue-tsc --build` |
-| `bun run preview` | Preview production build |
-| `bun run test:unit` | Run unit tests (Vitest) |
-| `bun run lint` | Run oxlint + ESLint |
-
-## Features
-
-- **Infinite scroll** — photos load in pages of 9 as you scroll
-- **Category filtering** — filter by Architecture, Nature, Portrait, Uncategorized
-- **Contentful admin upload** — use the authenticated Contentful Page app to preview one image and publish it with progress
-- **Lightbox** — fullscreen image viewer with keyboard navigation
-- **Pinterest-style gallery** — row-major shortest-column placement with one to four columns
-- **Scroll reveal** — items fade in as they enter the viewport
+Look closely. Notice the light. Keep moving.
