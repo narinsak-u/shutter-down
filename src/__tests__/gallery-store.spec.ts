@@ -117,6 +117,17 @@ describe('galleryStore', () => {
     expect(vi.mocked(fetchPhotos)).not.toHaveBeenCalled()
   })
 
+  it('fetches fresh data when the initial load is forced', async () => {
+    setCache('gallery-photos', { photos: mockPhotos, total: 1 })
+    vi.mocked(fetchPhotos).mockResolvedValue({ photos: mockPage2, total: 1 })
+
+    const store = useGalleryStore()
+    await store.fetchPhotos(true)
+
+    expect(store.photos).toEqual(mockPage2)
+    expect(vi.mocked(fetchPhotos)).toHaveBeenCalledWith(0, 9)
+  })
+
   it('shows stale cache then revalidates in background', async () => {
     const staleEntry = JSON.stringify({
       timestamp: Date.now() - 900_001,

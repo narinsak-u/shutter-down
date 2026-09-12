@@ -133,7 +133,7 @@ const setupScrollReveal = () => {
 
 /** Initializes gallery on component mount: fetches photos and sets up scroll-reveal animations. */
 onMounted(() => {
-  galleryStore.fetchPhotos();
+  galleryStore.fetchPhotos(true);
   window.addEventListener("resize", layoutMasonry);
   setupScrollReveal();
 });
@@ -197,7 +197,7 @@ watch(
       <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
       <button
         class="text-label-sm font-label-sm text-primary underline cursor-pointer"
-        @click="galleryStore.fetchPhotos()"
+        @click="galleryStore.fetchPhotos(true)"
       >
         Retry
       </button>

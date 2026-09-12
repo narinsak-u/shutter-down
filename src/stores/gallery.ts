@@ -48,9 +48,13 @@ export const useGalleryStore = defineStore('gallery', () => {
     }
   }
 
-  /** Loads the first page of photos, serving from cache when available.
-   *  Fresh cache: return immediately. Stale cache: show stale data, revalidate in background. */
-  async function fetchPhotos() {
+  /** Loads the first page of photos, optionally bypassing the cache for a fresh page load. */
+  async function fetchPhotos(forceNetwork = false) {
+    if (forceNetwork) {
+      await fetchFromNetwork()
+      return
+    }
+
     const cached = getFresh<{ photos: Photo[]; total: number }>(CACHE_KEY, CACHE_TTL)
     if (cached) {
       photos.value = cached.photos
