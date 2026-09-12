@@ -7,6 +7,8 @@ declare module '*.vue' {
 }
 
 interface ImportMetaEnv {
+  readonly VITE_CONTENTFUL_SPACE: string
+  readonly VITE_CONTENTFUL_ACCESS_TOKEN: string
   readonly VITE_INTERACTION_SPACE: string
   readonly VITE_INTERACTION_ENVIRONMENT: string
   readonly VITE_INTERACTION_ACCESS_TOKEN: string

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import App from '../App.vue'
+import router from '../router'
 
 // Mock IntersectionObserver
 const IntersectionObserverMock = vi.fn<
@@ -28,9 +29,10 @@ vi.mock('@/services/contentful', () => ({
 }))
 
 describe('App', () => {
-  it('renders the gallery headline', () => {
+  it('renders the gallery headline', async () => {
     setActivePinia(createPinia())
-    const wrapper = mount(App)
+    await router.push('/')
+    const wrapper = mount(App, { global: { plugins: [router] } })
     expect(wrapper.text()).toContain('Eyes up, shutter down.')
     expect(wrapper.text()).toContain('Built with')
   })

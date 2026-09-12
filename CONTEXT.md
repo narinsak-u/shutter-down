@@ -8,6 +8,10 @@ This context describes a public photography gallery where an administrator publi
 The person responsible for publishing photos and moderating visitor activity.
 _Avoid_: user, account owner
 
+**Admin Session**:
+The authenticated period during which the Admin may access protected gallery management actions.
+_Avoid_: login token, admin user
+
 **Visitor**:
 A person viewing the public gallery or interacting with a photo without signing in.
 _Avoid_: anonymous user, customer
@@ -23,8 +27,12 @@ The image file associated with a photo.
 _Avoid_: photo, attachment
 
 **Photo Metadata**:
-The descriptive information attached to a photo: title, description, location, capture date, category, and accessibility text.
+The descriptive information attached to a photo: location, capture date, category, and accessibility text.
 _Avoid_: image data, content fields
+
+**Photo Upload**:
+An Admin's submission of one Image Asset and its Photo Metadata for publication in the gallery.
+_Avoid_: post, media upload
 
 **Capture Date**:
 The calendar date on which a photograph was taken, independent of time zone.

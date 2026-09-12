@@ -33,7 +33,7 @@ src/
 
 ## Workflow
 
-Content is managed in **Contentful** via the `gallery` content type with fields: `location`, `alt` (Rich Text), `date`, `type` (portrait/landscape/square), `category` (Architecture/Nature/Portrait), and `src` (Media asset). The app fetches data from Contentful's Delivery API in pages of 9, ordered by date descending, with infinite scroll for loading more.
+Content is managed in **Contentful** via the `gallery` content type with fields: `location`, `alt` (Rich Text), `date`, `type` (portrait/landscape/square), `category`, and `src` (Media asset). The app fetches data from Contentful's Delivery API in pages of 9, ordered by date descending, with infinite scroll for loading more.
 
 ### Environment Setup
 
@@ -47,6 +47,8 @@ Set your Contentful credentials in `.env`:
 VITE_CONTENTFUL_SPACE=your_contentful_space_id
 VITE_CONTENTFUL_ACCESS_TOKEN=your_contentful_cda_token
 ```
+
+The uploader is a Contentful App Framework Page app. In Contentful, create an App Definition with the GitHub Pages URL as its source, enable the Page location, install it in the target space environment, and open its page from Contentful.
 
 ### Commands
 
@@ -63,7 +65,8 @@ VITE_CONTENTFUL_ACCESS_TOKEN=your_contentful_cda_token
 ## Features
 
 - **Infinite scroll** — photos load in pages of 9 as you scroll
-- **Category filtering** — filter by Architecture, Nature, Portrait
+- **Category filtering** — filter by Architecture, Nature, Portrait, Uncategorized
+- **Contentful admin upload** — use the authenticated Contentful Page app to preview one image and publish it with progress
 - **Lightbox** — fullscreen image viewer with keyboard navigation
 - **Pinterest-style gallery** — row-major shortest-column placement with one to four columns
 - **Scroll reveal** — items fade in as they enter the viewport
