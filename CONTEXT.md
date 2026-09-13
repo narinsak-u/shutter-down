@@ -26,9 +26,25 @@ _Avoid_: post, asset
 The image file associated with a photo.
 _Avoid_: photo, attachment
 
+**Image Replacement**:
+A Photo Management change that connects a new Image Asset to an existing Photo while preserving its identity and visitor activity.
+_Avoid_: new photo, re-upload
+
 **Photo Metadata**:
 The descriptive information attached to a photo: location, capture date, category, and accessibility text.
 _Avoid_: image data, content fields
+
+**Photo Management**:
+The Admin's work of finding and changing a published Photo or its Photo Metadata.
+_Avoid_: content management, asset management
+
+**Photo Editor**:
+The Admin interface for reviewing and changing one Photo and its Photo Metadata.
+_Avoid_: edit screen, asset editor
+
+**Photo Edit**:
+An Admin's proposed change to a Photo or its Photo Metadata before it is published.
+_Avoid_: draft photo, content update
 
 **Photo Upload**:
 An Admin's submission of one Image Asset and its Photo Metadata for publication in the gallery.

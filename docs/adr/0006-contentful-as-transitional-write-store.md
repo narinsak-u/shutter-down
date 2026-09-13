@@ -4,4 +4,4 @@ Contentful remains the immediate source of published photos while the S3/SQLite 
 
 ## Consequences
 
-The admin UI runs inside Contentful rather than at a public `/admin` route. Contentful installation and editor permissions protect writes; the future storage migration will replace the app's write implementation when needed.
+The admin UI runs inside Contentful. The public `/admin` route is only a private convenience redirect and does not provide authentication. Contentful installation and editor permissions protect writes; the future storage migration will replace the app's write implementation when needed.
