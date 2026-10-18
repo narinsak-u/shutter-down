@@ -201,7 +201,7 @@ watch(
 
 <template>
   <main
-    class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop md:mx-10 min-h-screen"
+    class="mx-auto min-h-screen w-full max-w-[1600px] px-4 pt-20 pb-section-gap sm:px-6 lg:px-10 2xl:px-16"
   >
     <section class="mb-16 md:mb-20 max-w-2xl">
       <h1 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h1>
@@ -234,31 +234,39 @@ watch(
 
     <p
       v-if="galleryStore.loading && galleryStore.photos.length === 0"
-      class="text-center py-20 text-body-lg font-body-lg text-secondary"
+      class="my-16 rounded-md border border-outline-variant bg-surface-bright px-6 py-12 text-center text-body-md font-body-md text-secondary"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
-      Loading...
+      Loading photos…
     </p>
 
     <div
       v-else-if="galleryStore.error && galleryStore.photos.length === 0"
-      class="text-center py-20"
+      class="my-16 rounded-md border border-outline-variant bg-surface-bright px-6 py-12 text-center"
+      role="alert"
     >
-      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+      <p class="text-body-md font-body-md text-primary">{{ galleryStore.error }}</p>
       <button
-        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        class="mt-4 text-label-sm font-label-sm text-primary underline underline-offset-4 cursor-pointer"
         @click="galleryStore.fetchPhotos(true)"
       >
-        Retry
+        Try again
       </button>
     </div>
 
-    <div v-if="galleryStore.error && galleryStore.photos.length > 0" class="text-center py-8">
-      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+    <div
+      v-if="galleryStore.error && galleryStore.photos.length > 0"
+      class="my-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-md border border-outline-variant px-4 py-3 text-center"
+      role="alert"
+    >
+      <p class="text-label-md font-label-md text-primary">{{ galleryStore.error }}</p>
       <button
-        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        class="text-label-sm font-label-sm text-primary underline underline-offset-4 cursor-pointer"
         @click="galleryStore.fetchPhotos(true)"
       >
-        Retry
+        Try again
       </button>
     </div>
 
@@ -287,19 +295,27 @@ watch(
         />
       </TransitionGroup>
 
-      <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
-        <p class="text-sm font-semibold text-secondary">No time to shoot.</p>
+      <div
+        v-if="galleryStore.filteredPhotos.length === 0"
+        class="my-16 rounded-md border border-outline-variant bg-surface-bright px-6 py-12 text-center"
+        role="status"
+      >
+        <p class="text-body-md font-body-md text-secondary">No photos in this category.</p>
       </div>
 
       <div ref="sentinelRef" v-if="galleryStore.hasMore" class="h-px" />
 
       <p
         v-if="galleryStore.loadingMore"
-        class="text-center py-8 text-body-lg font-body-lg text-secondary"
+        class="py-8 text-center text-label-md font-label-md text-secondary"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
       >
-        Loading more...
+        Loading more photos…
       </p>
     </template>
+
   </main>
 
   <Lightbox
