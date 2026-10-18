@@ -18,6 +18,7 @@ const openPhoto = (index: number) => {
 /** Reference to the sentinel element at the end of the gallery—used to trigger infinite scroll. */
 const sentinelRef = ref<HTMLElement | null>(null);
 const MASONRY_GAP = 24;
+const pendingImageLoads = new WeakSet<HTMLImageElement>();
 let layoutFrame = 0;
 let gridResizeObserver: ResizeObserver | null = null;
 
