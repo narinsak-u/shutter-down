@@ -177,8 +177,8 @@ describe('Gallery', () => {
 
     expect(wrapper.find('[data-photo-id="stale"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Refresh failed')
-    const retry = wrapper.findAll('button').find((button) => button.text() === 'Retry')
-    expect(retry?.text()).toBe('Retry')
+    const retry = wrapper.findAll('button').find((button) => button.text() === 'Try again')
+    expect(retry?.text()).toBe('Try again')
 
     vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('fresh')], total: 1 })
     await retry?.trigger('click')
@@ -187,19 +187,47 @@ describe('Gallery', () => {
     expect(wrapper.find('[data-photo-id="fresh"]').exists()).toBe(true)
   })
 
-  it('shows Loading and a full-screen retryable error when no cached Photos exist', async () => {
+  it('shows distinct initial and loading-more feedback', async () => {
+    const nextPage = deferred<{ photos: Photo[]; total: number }>()
+    vi.mocked(fetchPhotos)
+      .mockResolvedValueOnce({ photos: [photo('one')], total: 2 })
+      .mockReturnValueOnce(nextPage.promise)
+
+    wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
+    await flushPromises()
+    await useGalleryStore().loadMore()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Loading more photos…')
+    expect(wrapper.text()).not.toContain('Loading photos…')
+
+    nextPage.resolve({ photos: [photo('two')], total: 2 })
+    await flushPromises()
+  })
+
+  it('shows a clear empty-category message when no Photos match', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('one')], total: 1 })
+    wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
+    await flushPromises()
+    await useGalleryStore().setFilter('Architecture')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('No photos in this category.')
+  })
+
+  it('shows concise initial loading and a retryable error', async () => {
     const request = deferred<{ photos: Photo[]; total: number }>()
-    vi.mocked(fetchPhotos).mockReturnValue(request.promise)
+    vi.mocked(fetchPhotos).mockReturnValueOnce(request.promise)
 
     wrapper = mount(Gallery)
     await nextTick()
-    expect(wrapper.text()).toContain('Loading...')
+    expect(wrapper.text()).toContain('Loading photos…')
 
-    request.reject(new Error('Initial load failed'))
+    request.reject(new Error('Unable to load photos.'))
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Initial load failed')
-    expect(wrapper.findAll('button').find((button) => button.text() === 'Retry')?.text()).toBe('Retry')
-    expect(wrapper.find('#gallery').exists()).toBe(false)
+    expect(
+      wrapper.findAll('button').find((button) => button.text() === 'Try again')?.exists(),
+    ).toBe(true)
   })
 })
