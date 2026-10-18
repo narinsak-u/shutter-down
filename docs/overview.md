@@ -47,7 +47,7 @@ First read `src/main.ts` → `src/App.vue` and `src/router/index.ts` → the gal
 ```text
 Gallery mounts
   ↓
-Render fresh cached Photos immediately; show stale cached Photos while refreshing the first page in the background; otherwise fetch before display
+Use fresh cache immediately; show stale cache during background refresh; otherwise fetch before display. Prioritize the initial responsive row; keep remaining Photos lazy.
   ↓
 Filter by category or open a photo
   ↓
@@ -100,5 +100,5 @@ Evidence: `package.json`, `AGENTS.md`. Unit tests and the production build were 
 - `src/router/index.ts` defines client routes, not server endpoints. `/admin` is a redirect convenience, not authentication; management UI is mounted in the Contentful iframe and relies on Contentful installation/editor permissions (`docs/adr/0006-contentful-as-transitional-write-store.md`).
 - GitHub Actions tests and builds on pushes/PRs targeting `main`; deploys only pushes to `main` (`.github/workflows/deploy.yml`).
 <!-- skill-state
-output_sha256: 3aa3992961f1661b8b70dd2f318538422a36b1393bd1aee12eb16c6c51e7b8ed
+output_sha256: 07737dc65d1c4f6813c2f25b33611f5c52704b5e48371deb8bfe276c4f40a252
 -->

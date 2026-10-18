@@ -21,6 +21,7 @@ const MASONRY_GAP = 24;
 const pendingImageLoads = new WeakSet<HTMLImageElement>();
 let layoutFrame = 0;
 let gridResizeObserver: ResizeObserver | null = null;
+const pendingPositionedItems = new Set<HTMLElement>();
 
 function scheduleMasonryLayout(): void {
   if (layoutFrame) return;
@@ -28,6 +29,13 @@ function scheduleMasonryLayout(): void {
     layoutFrame = 0;
     layoutMasonry();
   });
+}
+
+function revealGalleryItemAfterLayout(el: Element): void {
+  const item = el as HTMLElement;
+  item.style.visibility = "hidden";
+  pendingPositionedItems.add(item);
+  scheduleMasonryLayout();
 }
 
 /** IntersectionObserver instance for scroll-reveal animation on gallery items. */
@@ -61,6 +69,7 @@ function layoutMasonry(): void {
   const items = getActiveGalleryItems(grid);
   if (!items.length) {
     grid.style.height = "0px";
+    pendingPositionedItems.clear();
     return;
   }
 
@@ -94,6 +103,13 @@ function layoutMasonry(): void {
   });
 
   grid.style.height = `${Math.max(...columnHeights) - MASONRY_GAP}px`;
+  for (const item of pendingPositionedItems) {
+    if (item.isConnected) {
+      item.style.visibility = "";
+      item.classList.remove("opacity-0", "translate-y-8");
+    }
+  }
+  pendingPositionedItems.clear();
 }
 
 /** Sets up infinite scroll: loads more photos when sentinel enters viewport with 200px margin. */
@@ -227,7 +243,7 @@ watch(
         tag="div"
         class="gallery-grid"
         id="gallery"
-        @enter="(el: Element) => el.classList.remove('opacity-0', 'translate-y-8')"
+        @enter="revealGalleryItemAfterLayout"
       >
         <GalleryItem
           v-for="(item, index) in galleryStore.filteredPhotos"
