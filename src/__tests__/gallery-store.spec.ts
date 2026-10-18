@@ -41,6 +41,15 @@ describe('galleryStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    const entries = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      get length() { return entries.size },
+      clear: () => entries.clear(),
+      getItem: (key: string) => entries.get(key) ?? null,
+      key: (index: number) => [...entries.keys()][index] ?? null,
+      removeItem: (key: string) => entries.delete(key),
+      setItem: (key: string, value: string) => entries.set(key, String(value)),
+    } satisfies Storage)
     localStorage.clear()
   })
 
@@ -164,6 +173,71 @@ describe('galleryStore', () => {
     expect(store.filteredPhotos).toEqual(mockPage2.filter((photo) => photo.category === 'square'))
     expect(store.loading).toBe(false)
     expect(store.hasMore).toBe(false)
+  })
+  it('keeps stale-cache pagination after refresh failure without reloading page zero', async () => {
+    const cachedPhotos = Array.from({ length: 9 }, (_, index) => ({
+      ...mockPhotos[0]!,
+      id: `cached-${index}`,
+    }))
+    localStorage.setItem('cache:gallery-photos', JSON.stringify({
+      timestamp: Date.now() - 900_001,
+      data: { photos: cachedPhotos, total: 18 },
+    }))
+    vi.mocked(fetchPhotos)
+      .mockRejectedValueOnce(new Error('refresh failed'))
+      .mockResolvedValueOnce({ photos: mockPage2, total: 18 })
+
+    const store = useGalleryStore()
+    await store.fetchPhotos()
+    await vi.waitFor(() => expect(store.loading).toBe(false))
+    expect(store.photos).toEqual(cachedPhotos)
+    expect(store.error).toBe('refresh failed')
+
+    await store.loadMore()
+
+    expect(vi.mocked(fetchPhotos)).toHaveBeenNthCalledWith(2, 9, 9)
+    expect(store.photos).toEqual([...cachedPhotos, ...mockPage2])
+    expect(new Set(store.photos.map((photo) => photo.id)).size).toBe(store.photos.length)
+  })
+
+  it('does not load a page while stale data is being refreshed', async () => {
+    const cachedPhotos = Array.from({ length: 9 }, (_, index) => ({
+      ...mockPhotos[0]!,
+      id: `cached-${index}`,
+    }))
+    localStorage.setItem('cache:gallery-photos', JSON.stringify({
+      timestamp: Date.now() - 900_001,
+      data: { photos: cachedPhotos, total: 18 },
+    }))
+    const refresh = Promise.withResolvers<FetchPhotosResult>()
+    vi.mocked(fetchPhotos).mockReturnValue(refresh.promise)
+
+    const store = useGalleryStore()
+    await store.fetchPhotos()
+    await store.loadMore()
+    expect(fetchPhotos).toHaveBeenCalledTimes(1)
+    expect(store.photos).toEqual(cachedPhotos)
+
+    refresh.reject(new Error('refresh failed'))
+    await vi.waitFor(() => expect(store.loading).toBe(false))
+  })
+  it('ignores an in-flight page response after a network refresh replaces the list', async () => {
+    setCache('gallery-photos', { photos: mockPhotos, total: 10 })
+    const nextPage = Promise.withResolvers<FetchPhotosResult>()
+    vi.mocked(fetchPhotos)
+      .mockReturnValueOnce(nextPage.promise)
+      .mockResolvedValueOnce({ photos: [mockPage2[0]!], total: 1 })
+
+    const store = useGalleryStore()
+    await store.fetchPhotos()
+    const loadMore = store.loadMore()
+    await store.fetchPhotos(true)
+    nextPage.resolve({ photos: mockPage2, total: 10 })
+    await loadMore
+
+    expect(vi.mocked(fetchPhotos)).toHaveBeenNthCalledWith(1, 1, 9)
+    expect(vi.mocked(fetchPhotos)).toHaveBeenNthCalledWith(2, 0, 9)
+    expect(store.photos).toEqual([mockPage2[0]])
   })
 
   it('loadMore always calls the API and does not cache', async () => {

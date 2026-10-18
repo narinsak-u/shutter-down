@@ -32,9 +32,10 @@ function sdkFor(overrides: Record<string, unknown> = {}) {
     dialogs: { openConfirm: vi.fn().mockResolvedValue(true) },
     notifier: { success: vi.fn() },
     cma: {
-      upload: { create: vi.fn().mockResolvedValue({ sys: { id: 'upload-1' } }), delete: vi.fn() },
+      upload: { create: vi.fn().mockResolvedValue({ sys: { id: 'upload-1' } }), delete: vi.fn().mockImplementation(async ({ uploadId }) => { calls.push(`delete-upload:${uploadId}`) }) },
       asset: {
         create: vi.fn().mockResolvedValue(newAsset),
+        createWithId: vi.fn().mockResolvedValue(newAsset),
         processForLocale: vi.fn().mockResolvedValue(newAsset),
         publish: vi.fn().mockResolvedValue(newAsset),
         get: vi.fn().mockImplementation(async ({ assetId }) => asset(assetId)),
@@ -187,7 +188,8 @@ describe('Contentful Admin recovery', () => {
     if (failurePoint === 'upload') {
       vi.mocked(setup.sdk.cma.upload.create).mockRejectedValueOnce(new Error('image stage failed'))
     } else if (failurePoint === 'create') {
-      vi.mocked(setup.sdk.cma.asset.create).mockRejectedValueOnce(new Error('image stage failed'))
+      vi.mocked(setup.sdk.cma.asset.createWithId).mockRejectedValueOnce(new Error('image stage failed'))
+      vi.mocked(setup.sdk.cma.asset.get).mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }))
     } else if (failurePoint === 'processForLocale') {
       vi.mocked(setup.sdk.cma.asset.processForLocale).mockRejectedValueOnce(new Error('image stage failed'))
     } else {
@@ -206,6 +208,48 @@ describe('Contentful Admin recovery', () => {
     if (failurePoint === 'processForLocale' || failurePoint === 'publish') {
       expect(setup.calls).toContain('delete:new-asset')
     }
+    wrapper.unmount()
+  })
+  it('inspects and removes a remotely-created asset before deleting its upload after a lost create response', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.asset.createWithId).mockRejectedValueOnce(new Error('asset response lost'))
+    vi.mocked(setup.sdk.cma.asset.get).mockImplementationOnce(async ({ assetId }) => ({
+      ...asset(assetId),
+      sys: { id: assetId, version: 1 },
+      fields: { file: { 'en-US': { uploadFrom: { sys: { id: 'upload-1', linkType: 'Upload' } } } } },
+    } as never))
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'contentful-photo')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    const assetId = vi.mocked(setup.sdk.cma.asset.createWithId).mock.calls[0]?.[0].assetId
+    expect(assetId).toBeTruthy()
+    expect(setup.sdk.cma.asset.createWithId).toHaveBeenCalledWith(
+      { assetId },
+      expect.objectContaining({ fields: expect.any(Object) }),
+    )
+    expect(setup.sdk.cma.asset.get).toHaveBeenCalledWith({ assetId })
+    expect(setup.calls.indexOf(`delete:${assetId}`)).toBeLessThan(setup.calls.indexOf('delete-upload:upload-1'))
+    expect(setup.sdk.cma.upload.delete).toHaveBeenCalledWith({ uploadId: 'upload-1' })
+    wrapper.unmount()
+  })
+
+  it('retains the upload when an asset create response is lost and remote inspection is uncertain', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.asset.createWithId).mockRejectedValueOnce(new Error('asset response lost'))
+    vi.mocked(setup.sdk.cma.asset.get).mockRejectedValueOnce(new Error('asset inspection failed'))
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'contentful-photo')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(setup.sdk.cma.asset.get).toHaveBeenCalledWith({ assetId: expect.any(String) })
+    expect(setup.sdk.cma.asset.delete).not.toHaveBeenCalled()
+    expect(setup.sdk.cma.upload.delete).not.toHaveBeenCalled()
+    expect(wrapper.get('[role="alert"]').text()).toContain('retained')
     wrapper.unmount()
   })
 

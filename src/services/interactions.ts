@@ -244,18 +244,39 @@ async function createAndPublish(
       },
     }, '/published')
   } catch (error) {
-    if (!(error instanceof ContentfulHttpError)) throw error
+    let currentEntry: ContentfulEntry
+    try {
+      const currentPayload = await requestManagement(config, id)
+      currentEntry = asEntry(currentPayload)
+    } catch {
+      const detail = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${detail} The publication state could not be confirmed; the interaction was retained.`)
+    }
 
+    if (currentEntry.sys?.id !== id) {
+      const detail = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${detail} The publication state could not be confirmed; the interaction was retained.`)
+    }
+    if (hasPublishedVersion(currentEntry)) {
+      return { id, entry: currentEntry }
+    }
+
+    const currentVersion = contentfulVersion(currentEntry)
+    if (!currentVersion) {
+      const detail = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${detail} The unpublished entry version could not be confirmed; the interaction was retained.`)
+    }
     try {
       await requestManagement(config, id, {
         method: 'DELETE',
         headers: {
-          'X-Contentful-Version': version,
+          'X-Contentful-Version': currentVersion,
         },
       })
     } catch (compensationError) {
       const detail = compensationError instanceof Error ? ` ${compensationError.message}` : ''
-      throw new Error(`${error.message} Draft cleanup failed.${detail}`)
+      const original = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${original} Draft cleanup failed.${detail}`)
     }
     throw error
   }

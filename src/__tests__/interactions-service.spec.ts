@@ -267,6 +267,7 @@ describe('interactions service', () => {
     const fetchMock = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-like', version: 1 } }, 201))
       .mockResolvedValueOnce(jsonResponse({ message: 'publish rejected' }, 500))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-like', version: 2 } }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(jsonResponse({ sys: { id: 'retry-like', version: 1 } }, 201))
       .mockResolvedValueOnce(jsonResponse({ sys: { id: 'retry-like', version: 2, publishedVersion: 1 } }))
@@ -275,17 +276,19 @@ describe('interactions service', () => {
     await expect(createLike('photo-1', IP_HASH)).rejects.toThrow(/status 500/)
     await expect(createLike('photo-1', IP_HASH)).resolves.toBe('retry-like')
 
-    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(fetchMock).toHaveBeenCalledTimes(6)
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain('/entries/failed-like')
-    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('DELETE')
-    expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get('X-Contentful-Version')).toBe('1')
-    expect(String(fetchMock.mock.calls[4]?.[0])).toContain('/entries/retry-like/published')
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
+    expect(fetchMock.mock.calls[3]?.[1]?.method).toBe('DELETE')
+    expect(new Headers(fetchMock.mock.calls[3]?.[1]?.headers).get('X-Contentful-Version')).toBe('2')
+    expect(String(fetchMock.mock.calls[5]?.[0])).toContain('/entries/retry-like/published')
   })
 
   it('compensates a confirmed failed comment publication and permits retry', async () => {
     const fetchMock = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-comment', version: 1 } }, 201))
       .mockResolvedValueOnce(jsonResponse({ message: 'publish rejected' }, 500))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-comment', version: 3 } }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(jsonResponse({
         sys: { id: 'retry-comment', version: 1 },
@@ -316,34 +319,77 @@ describe('interactions service', () => {
       status: 'visible',
     })
 
-    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(fetchMock).toHaveBeenCalledTimes(6)
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain('/entries/failed-comment')
-    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('DELETE')
-    expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get('X-Contentful-Version')).toBe('1')
-    expect(String(fetchMock.mock.calls[4]?.[0])).toContain('/entries/retry-comment/published')
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
+    expect(fetchMock.mock.calls[3]?.[1]?.method).toBe('DELETE')
+    expect(new Headers(fetchMock.mock.calls[3]?.[1]?.headers).get('X-Contentful-Version')).toBe('3')
+    expect(String(fetchMock.mock.calls[5]?.[0])).toContain('/entries/retry-comment/published')
   })
 
-  it('does not compensate when publication has an ambiguous network failure', async () => {
+  it('inspects after a network failure and returns success when publication happened remotely', async () => {
     const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'uncertain-like', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'published-like', version: 1 } }, 201))
       .mockRejectedValueOnce(new TypeError('network timeout'))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'published-like', version: 2, publishedVersion: 1 } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLike('photo-1', IP_HASH)).resolves.toBe('published-like')
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
+    expect(String(fetchMock.mock.calls[2]?.[0])).toMatch(/\/entries\/published-like$/)
+  })
+
+  it('compensates a confirmed unpublished draft with its current version after a network failure', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'unpublished-like', version: 1 } }, 201))
+      .mockRejectedValueOnce(new TypeError('network timeout'))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'unpublished-like', version: 4 } }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(createLike('photo-1', IP_HASH)).rejects.toThrow('network timeout')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PUT')
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
+    expect(fetchMock.mock.calls[3]?.[1]?.method).toBe('DELETE')
+    expect(new Headers(fetchMock.mock.calls[3]?.[1]?.headers).get('X-Contentful-Version')).toBe('4')
+  })
+
+  it('retains an interaction when publication and remote-state inspection are uncertain', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'uncertain-like', version: 1 } }, 201))
+      .mockRejectedValueOnce(new TypeError('network timeout'))
+      .mockRejectedValueOnce(new TypeError('inspection timeout'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLike('photo-1', IP_HASH)).rejects.toThrow(/network timeout.*state could not be confirmed/i)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
+  })
+  it('inspects a malformed publication response and returns success if the entry is published', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'malformed-like', version: 1 } }, 201))
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'malformed-like', version: 2, publishedVersion: 1 } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLike('photo-1', IP_HASH)).resolves.toBe('malformed-like')
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
   })
 
   it('reports when draft compensation itself fails after publication rejection', async () => {
     const fetchMock = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ sys: { id: 'like-to-clean', version: 1 } }, 201))
       .mockResolvedValueOnce(jsonResponse({ message: 'publish rejected' }, 500))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'like-to-clean', version: 3 } }))
       .mockResolvedValueOnce(jsonResponse({ message: 'delete rejected' }, 500))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(createLike('photo-1', IP_HASH)).rejects.toThrow(/Draft cleanup failed.*status 500/)
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('DELETE')
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('GET')
+    expect(fetchMock.mock.calls[3]?.[1]?.method).toBe('DELETE')
   })
 
 
