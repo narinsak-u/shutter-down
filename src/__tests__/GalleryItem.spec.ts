@@ -11,7 +11,23 @@ describe('GalleryItem', () => {
     alt: 'A test photo',
     location: 'Paris, FR',
     date: 'May, 2026',
+    imageWidth: 1200,
+    imageHeight: 800,
   }
+
+  it('reserves the source image aspect ratio before the thumbnail loads', () => {
+    const wrapper = mount(GalleryItem, { props: baseProps })
+    const img = wrapper.find('img')
+    expect(img.attributes('width')).toBe('1200')
+    expect(img.attributes('height')).toBe('800')
+  })
+
+  it('renders without reserved dimensions when metadata is unavailable', () => {
+    const wrapper = mount(GalleryItem, {
+      props: { ...baseProps, imageWidth: undefined, imageHeight: undefined },
+    })
+    expect(wrapper.find('img').attributes('width')).toBeUndefined()
+  })
 
   it('renders the thumbSrc as image src', () => {
     const wrapper = mount(GalleryItem as any, { props: baseProps })

@@ -6,6 +6,8 @@ defineProps<{
   alt: string;
   location: string;
   date: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }>();
 
 defineEmits<{ click: [] }>();
@@ -19,6 +21,8 @@ defineEmits<{ click: [] }>();
       <img
         :src="thumbSrc"
         :alt="alt"
+        :width="imageWidth"
+        :height="imageHeight"
         class="w-full h-auto block image-zoom"
         loading="lazy"
         draggable="false"

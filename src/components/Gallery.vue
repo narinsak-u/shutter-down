@@ -18,7 +18,16 @@ const openPhoto = (index: number) => {
 /** Reference to the sentinel element at the end of the gallery—used to trigger infinite scroll. */
 const sentinelRef = ref<HTMLElement | null>(null);
 const MASONRY_GAP = 24;
-const pendingImageLoads = new WeakSet<HTMLImageElement>();
+let layoutFrame = 0;
+let gridResizeObserver: ResizeObserver | null = null;
+
+function scheduleMasonryLayout(): void {
+  if (layoutFrame) return;
+  layoutFrame = requestAnimationFrame(() => {
+    layoutFrame = 0;
+    layoutMasonry();
+  });
+}
 
 /** IntersectionObserver instance for scroll-reveal animation on gallery items. */
 let observer: IntersectionObserver | null = null;
@@ -67,7 +76,7 @@ function layoutMasonry(): void {
       pendingImageLoads.add(image);
       image.addEventListener("load", () => {
         pendingImageLoads.delete(image);
-        layoutMasonry();
+        scheduleMasonryLayout();
       }, { once: true });
     }
 
@@ -134,7 +143,7 @@ const setupScrollReveal = () => {
 /** Initializes gallery on component mount: fetches photos and sets up scroll-reveal animations. */
 onMounted(() => {
   galleryStore.fetchPhotos();
-  window.addEventListener("resize", layoutMasonry);
+  window.addEventListener("resize", scheduleMasonryLayout);
   setupScrollReveal();
 });
 
@@ -142,7 +151,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) observer.disconnect();
   if (loadMoreObserver) loadMoreObserver.disconnect();
-  window.removeEventListener("resize", layoutMasonry);
+  if (gridResizeObserver) gridResizeObserver.disconnect();
+  window.removeEventListener("resize", scheduleMasonryLayout);
+  if (layoutFrame) cancelAnimationFrame(layoutFrame);
 });
 
 /** Watches filtered photos: re-runs scroll-reveal and infinite scroll setup when filter changes or photos load. */
@@ -150,7 +161,12 @@ watch(
   () => galleryStore.filteredPhotos,
   async () => {
     await nextTick();
-    layoutMasonry();
+    scheduleMasonryLayout();
+    const grid = document.getElementById("gallery");
+    if (grid && !gridResizeObserver) {
+      gridResizeObserver = new ResizeObserver(scheduleMasonryLayout);
+      gridResizeObserver.observe(grid);
+    }
     setupScrollReveal();
     setupLoadMore();
   },
@@ -219,6 +235,8 @@ watch(
           :alt="item.alt"
           :location="item.location"
           :date="item.date"
+          :imageWidth="item.imageWidth"
+          :imageHeight="item.imageHeight"
           :data-photo-id="item.id"
           @click="openPhoto(index)"
         />
