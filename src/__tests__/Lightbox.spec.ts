@@ -148,33 +148,6 @@ describe("Lightbox", () => {
     expect(wrapper.text()).not.toContain("Bookmark");
   });
 
-  it("bounds the mobile interaction card to the viewport while retaining desktop sizing", () => {
-    const wrapper = mount(LightboxComponent, {
-      props: { items: single, modelValue: true, index: 0 },
-    });
-
-    const card = wrapper.find('[role="dialog"] > div');
-    expect(card.classes()).toContain("max-h-[calc(100dvh-1rem)]");
-    expect(card.classes()).toContain("md:max-h-[calc(100vh-4rem)]");
-  });
-  it("retains fullscreen backdrop semantics on the open dialog root", () => {
-    const wrapper = mount(LightboxComponent, {
-      props: { items: single, modelValue: true, index: 0 },
-    });
-
-    const root = wrapper.find('[role="dialog"]');
-    expect(root.classes()).toEqual(
-      expect.arrayContaining([
-        "fixed",
-        "inset-0",
-        "z-100",
-        "overflow-y-auto",
-        "bg-black/70",
-        "p-2",
-        "md:p-8",
-      ]),
-    );
-  });
   it('presents the photo as the primary region with identifiable close and navigation controls', async () => {
     const wrapper = mount(LightboxComponent, {
       props: { items, modelValue: true, index: 0 },

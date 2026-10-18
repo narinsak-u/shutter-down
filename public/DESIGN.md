@@ -174,5 +174,11 @@ To maintain a sophisticated and professional look, this design system uses a **S
 - Top-aligned with high horizontal padding. Use `label-sm` for nav links with a persistent underline for the active state.
 - On narrow screens, category filters scroll horizontally only when they overflow. Do not suppress the native scroll indicator; keep the navigation keyboard-focusable.
 
+### Lightbox
+
+- On narrow screens, let the full photo and activity content scroll vertically in the overlay
+  while keeping the close control visible. On larger screens, keep the panel within the
+  viewport and let comments scroll within the activity panel.
+
 ### Transitions
 - All interactive states (hover, focus) must use a 200ms "ease-out" transition. Gallery filtering should use a simple opacity fade (300ms) rather than complex sliding animations.

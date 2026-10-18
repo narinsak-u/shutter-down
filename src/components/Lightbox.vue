@@ -473,11 +473,12 @@ onUnmounted(() => {
       role="dialog"
       aria-modal="true"
       :data-photo-id="currentPhoto?.id"
-      class="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-black/70 p-2 md:p-8"
+      class="fixed inset-0 z-100 flex items-start justify-center overflow-y-auto
+        bg-black/70 p-2 md:items-center md:p-8"
       @click.self="close"
     >
       <button
-        class="absolute right-4 top-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        class="fixed right-4 top-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         type="button"
         aria-label="Close lightbox"
         @click="close"
@@ -503,7 +504,9 @@ onUnmounted(() => {
         <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
       </button>
       <div
-        class="relative flex min-h-[min(90vh,680px)] max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-sm bg-white shadow-2xl md:max-h-[calc(100vh-4rem)] md:min-h-0 md:flex-row"
+        class="relative my-auto flex min-h-[min(90vh,680px)] w-full max-w-6xl
+          flex-col rounded-sm bg-white shadow-2xl md:max-h-[calc(100vh-4rem)]
+          md:min-h-0 md:flex-row md:overflow-hidden"
         @click.stop
       >
         <section
@@ -532,7 +535,7 @@ onUnmounted(() => {
             </div>
 
             <div
-              class="flex min-h-0 flex-1 flex-col overflow-y-auto py-4"
+              class="flex min-h-0 flex-1 flex-col overflow-visible py-4 md:overflow-y-auto"
               role="region"
               aria-label="Comments"
               aria-live="polite"
