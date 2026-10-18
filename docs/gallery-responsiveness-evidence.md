@@ -2,55 +2,63 @@
 
 ## Final snapshot and conditions
 
-Final implementation snapshot: `2f24337429fe9ae4fcf9bb3ca2a1a62f6aacf9d6`. Baseline:
+Final implementation snapshot: `5ae60d2516df8c331cd15cdbab2bc615ffca3ae5`. Baseline:
 `19427d2f0284703ecd97fb3dceafb8e9e856f04f`.
 
-Fresh browser tabs used the same local Vite environment at 390×844 and 1280×900, with browser
-cache disabled and localStorage cleared. Each result is a single run. Initial requests were counted
-after first render; journey requests were counted after clearing that log, then filtering to Nature,
-scrolling to the bottom, opening the first filtered Photo, and waiting for the Lightbox.
+Fresh browser tabs used the same local Vite setup at 390×844 and 1280×900. Browser cache was
+disabled and localStorage cleared. Each measurement is one run; first-row images were loaded before
+filtering to Nature, scrolling to the bottom, opening its first Photo, and waiting for the Lightbox.
+Request logs were cleared before that journey. Counts include dev-server, font, Contentful,
+preflight, and image requests.
 
 | Viewport | Baseline FCP / LCP / CLS | Final FCP / LCP / CLS | Initial requests, baseline / final | Journey requests, baseline / final |
 |---|---|---|---:|---:|
-| 390×844 | 220 ms / 452 ms / 0 | 140 ms / not observed / 0 | 65 / 65 | 22 / 15 |
-| 1280×900 | 188 ms / 304 ms / 0.06 | 156 ms / not observed / 0 | 75 / 66 | 21 / 17 |
-
-The final LCP observer returned no entry at either viewport; no LCP conclusion is possible. Final
-CLS was zero in the initial and filter/scroll captures, but one run does not establish sustained
-stability. Request counts include dev-server resources, fonts, Contentful, and image activity.
-The baseline values come from the previously recorded matched comparison; all counts and timings
-are descriptive, not statistically controlled.
+| 390×844 | 128 ms / 248 ms / 0 | 152 ms / 236 ms / 0 | 118 / 118 | 22 / 25 |
+| 1280×900 | 172 ms / 308 ms / 0.04 | 160 ms / 324 ms / 0 | 128 / 130 | 21 / 23 |
 
 ## Renderer trace
 
-The mobile trace covered Nature filtering, scroll-to-bottom, and one-second settle. The desktop
-trace used the same journey. The baseline desktop trace was not captured.
+The trace covers Nature filtering, scroll-to-bottom, and a one-second settle. Layout-shift totals
+include buffered entries from page navigation through the journey and exclude entries with recent
+input.
 
-| Trace metric | Baseline mobile | Final mobile | Final desktop |
-|---|---:|---:|---:|
-| `Layout` events / total duration | 37 / 2.023 ms | 22 / 3.726 ms | 33 / 1.831 ms |
-| `UpdateLayoutTree` events / total duration | 128 / 8.163 ms | 118 / 24.778 ms | 120 / 7.497 ms |
-| Non-input layout shifts after filter/scroll | 3 / 0.1162 | 0 | 0 |
+| Trace metric | Baseline mobile | Final mobile | Baseline desktop | Final desktop |
+|---|---:|---:|---:|---:|
+| `Layout` events / total duration | 40 / 2.182 ms | 25 / 3.497 ms | 35 / 1.930 ms | 30 / 2.078 ms |
+| `UpdateLayoutTree` events / total duration | 120 / 7.945 ms | 104 / 23.758 ms | 113 / 8.553 ms | 112 / 8.723 ms |
+| Non-input layout shifts / total score | 5 / 0.2047 | 3 / 0.0779 | 7 / 0.2259 | 2 / 0.0007 |
 
-The final mobile trace had fewer events but longer summed `UpdateLayoutTree` duration than the
-baseline; the single-run results do not establish an overall performance improvement. Trace
-durations are renderer event totals, not end-to-end settle times.
+The final run had fewer layout events at both widths, but longer summed layout and style-update
+durations. Initial desktop CLS was zero in the final run versus 0.22 in the baseline; the mobile
+initial CLS was zero in both. One run per condition does not establish a performance improvement.
+Renderer event totals are not end-to-end settle times.
 
 ## User-visible checks and limitations
 
-- The same nine Photo IDs appeared in the same initial order. At mobile width, the initial Photo
-  was eager/high-priority and the other eight were lazy; at desktop width, the first four were
-  eager/high-priority and the other five were lazy. Every checked image had width/height attributes.
-- The Gallery remained visible from a stale cache while a synthetic refresh was pending and after
-  a synthetic 400 response; the error and Retry control appeared. A synthetic successful retry
-  replaced the stale Photo. No write was made.
-- Synthetic comment responses at both viewports showed five comments, then appended two after
-  “Load more”. Requests were `(skip=0, limit=5)` then `(skip=5, limit=5)`; the pagination action
-  added no Like requests. Live Photos had no comments available for this check; no Comment was
-  submitted.
-- Nature filtering and scrolling displayed the same duplicate Photo ID in both the baseline record
-  and final browser run. Its cause is unknown and was not attributed to this layout change.
-- Geist font requests to jsDelivr failed in the browser runs; this external loading issue can affect
-  typography and timing observations.
+- The final initial Gallery showed nine Photos in the same observed order as the baseline. At 390
+  pixels it used one column; resizing to 1280 pixels produced four columns at x=104, 378, 652, and
+  926, then resizing back restored one column at x=24. A desktop tab also resized 1280→390→1280
+  and returned to four columns.
+- Lightbox navigation worked at both widths: mobile ArrowRight/ArrowLeft changed the selected Photo
+  `54K5yTe4u5Ww6uzk5oLYif` → `3pop2mkFXIvL4ixKOXt7pb` → `54K5yTe4u5Ww6uzk5oLYif`; desktop
+  Next/Previous changed `7IJVdV7Pn7HMGULuVTcXSL` → `2AI2BqYEAKgvU9XA2X6y1J` → `7IJVdV7Pn7HMGULuVTcXSL`.
+- With a synthetic one-second cold Contentful response, baseline and final both showed `Loading...`
+  with zero Photo cards while waiting, then showed nine Photos. The baseline first image was lazy
+  with automatic priority; the final first image was eager/high-priority.
+- At final width, the first Photo was eager/high-priority on mobile and the first four were
+  eager/high-priority on desktop; remaining Photos were lazy. Checked images had width and height
+  attributes.
+- A synthetic stale-cache run kept nine cached Photos visible after a 400 refresh failure and showed
+  Retry. Re-entering the sentinel loaded the next page at `skip=9`; all 18 resulting Photo IDs were
+  unique. No write was made.
+- Synthetic Comment responses showed five Comments initially, ten after loading more at mobile,
+  then twelve after loading the final page at desktop. Requests used `(skip=0, limit=5)`,
+  `(skip=5, limit=5)`, and `(skip=10, limit=5)`. No Like or Comment write request was made.
+- The Photo ID `54K5yTe4u5Ww6uzk5oLYif` appeared twice in Nature-filtered results after scrolling in
+  both baseline and final runs. Its cause is unknown; it was not attributed to the responsiveness
+  changes.
+- Geist font requests to jsDelivr failed in the browser runs. The production build passed but still
+  reports a 516.47 kB JavaScript chunk above Vite’s 500 kB warning threshold.
 
-No numeric performance target was set; these observations are evidence, not a pass threshold.
+No numeric performance target was set. The observations do not support an overall smoothness or
+performance-improvement claim.
