@@ -3,9 +3,10 @@ import type {
   InteractionConfig,
   InteractionSummary,
 } from '@/types/interactions'
-
+import { fetchCommentPage, mapCommentPageItems } from '@/services/comment-pages'
 const DELIVERY_API = 'https://cdn.contentful.com'
 const MANAGEMENT_API = 'https://api.contentful.com'
+ 
 const DEFAULT_COMMENT_LIMIT = 5
 const MAX_COMMENT_LENGTH = 500
 
@@ -18,6 +19,14 @@ interface ContentfulEntry {
   sys?: Record<string, unknown>
   fields?: Record<string, unknown>
 }
+
+class ContentfulHttpError extends Error {
+  constructor(readonly status: number) {
+    super(`Interaction write failed with status ${status}.`)
+    this.name = 'ContentfulHttpError'
+  }
+}
+
 
 function getInteractionConfig(): InteractionConfig {
   return {
@@ -95,7 +104,7 @@ async function requestManagement(
     ...options,
     headers,
   })
-  if (response.ok === false) throw new Error(`Interaction write failed with status ${response.status}.`)
+  if (response.ok === false) throw new ContentfulHttpError(response.status)
   if (response.status === 204) return undefined
   return readJson(response)
 }
@@ -146,7 +155,7 @@ function responseTotal(response: ContentfulResponse): number {
     : responseItems(response).length
 }
 
-/** Reads the current like count, viewer like, and one paginated page of comments. */
+/** Reads the current like count, viewer like, and first page of comments. */
 export async function fetchInteractionSummary(
   photoId: string,
   ipHash: string,
@@ -158,40 +167,35 @@ export async function fetchInteractionSummary(
   const pagination = normalizePagination(skip, limit)
   const config = getInteractionConfig()
   requireConfig(config)
-
-  const [likes, viewerLikes, comments] = await Promise.all([
+  const [likes, viewerLikes, page] = await Promise.all([
     requestDelivery(config, {
-      content_type: 'photoLike',
-      'fields.photoId': normalizedPhotoId,
-      limit: '1',
-      select: 'sys.id',
+      content_type: 'photoLike', 'fields.photoId': normalizedPhotoId, limit: '1', select: 'sys.id',
     }),
     requestDelivery(config, {
-      content_type: 'photoLike',
-      'fields.photoId': normalizedPhotoId,
-      'fields.ipHash': normalizedIpHash,
-      limit: '1',
-      select: 'sys.id',
+      content_type: 'photoLike', 'fields.photoId': normalizedPhotoId, 'fields.ipHash': normalizedIpHash, limit: '1', select: 'sys.id',
     }),
-    requestDelivery(config, {
-      content_type: 'photoComment',
-      'fields.photoId': normalizedPhotoId,
-      'fields.status': 'visible',
-      order: '-fields.createdAt',
-      skip: String(pagination.skip),
-      limit: String(pagination.limit),
-    }),
+    fetchCommentPage(config, normalizedPhotoId, pagination.skip, pagination.limit),
   ])
-
-  const commentItems = responseItems(comments)
   const viewerLikeId = asEntry(responseItems(viewerLikes)[0]).sys?.id
   return {
     likeCount: responseTotal(likes),
     likedByViewer: responseTotal(viewerLikes) > 0,
     ...(typeof viewerLikeId === 'string' && viewerLikeId ? { viewerLikeId } : {}),
-    comments: commentItems.map((comment) => normalizeComment(comment)),
-    hasMoreComments: pagination.skip + commentItems.length < responseTotal(comments),
+    ...page,
   }
+}
+
+/** Reads only one page of visible comments. */
+export async function fetchOlderComments(
+  photoId: string,
+  skip: number,
+  limit = DEFAULT_COMMENT_LIMIT,
+): Promise<{ comments: InteractionComment[]; hasMoreComments: boolean }> {
+  const normalizedPhotoId = requireIdentifier(photoId, 'photoId')
+  const pagination = normalizePagination(skip, limit)
+  const config = getInteractionConfig()
+  requireConfig(config)
+  return fetchCommentPage(config, normalizedPhotoId, pagination.skip, pagination.limit)
 }
 
 function managementFields(fields: Record<string, string>): Record<string, Record<string, string>> {
@@ -231,12 +235,51 @@ async function createAndPublish(
   const version = contentfulVersion(createdEntry)
   if (!version) throw new Error('Contentful did not return a version for the new interaction.')
 
-  const publishedPayload = await requestManagement(config, id, {
-    method: 'PUT',
-    headers: {
-      'X-Contentful-Version': version,
-    },
-  }, '/published')
+  let publishedPayload: unknown
+  try {
+    publishedPayload = await requestManagement(config, id, {
+      method: 'PUT',
+      headers: {
+        'X-Contentful-Version': version,
+      },
+    }, '/published')
+  } catch (error) {
+    let currentEntry: ContentfulEntry
+    try {
+      const currentPayload = await requestManagement(config, id)
+      currentEntry = asEntry(currentPayload)
+    } catch {
+      const detail = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${detail} The publication state could not be confirmed; the interaction was retained.`)
+    }
+
+    if (currentEntry.sys?.id !== id) {
+      const detail = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${detail} The publication state could not be confirmed; the interaction was retained.`)
+    }
+    if (hasPublishedVersion(currentEntry)) {
+      return { id, entry: currentEntry }
+    }
+
+    const currentVersion = contentfulVersion(currentEntry)
+    if (!currentVersion) {
+      const detail = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${detail} The unpublished entry version could not be confirmed; the interaction was retained.`)
+    }
+    try {
+      await requestManagement(config, id, {
+        method: 'DELETE',
+        headers: {
+          'X-Contentful-Version': currentVersion,
+        },
+      })
+    } catch (compensationError) {
+      const detail = compensationError instanceof Error ? ` ${compensationError.message}` : ''
+      const original = error instanceof Error ? error.message : 'Publication failed.'
+      throw new Error(`${original} Draft cleanup failed.${detail}`)
+    }
+    throw error
+  }
   const publishedEntry = asEntry(publishedPayload)
   const publishedId = publishedEntry.sys?.id
   return {

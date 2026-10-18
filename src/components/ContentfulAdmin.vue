@@ -207,25 +207,67 @@ function removeFile(): void {
   fileError.value = "";
 }
 
-async function cleanupAsset(assetId: string): Promise<void> {
+async function cleanupAsset(assetId: string): Promise<boolean> {
   try {
     const current = await props.sdk.cma.asset.get({ assetId });
     if (current.sys.publishedVersion !== undefined) await props.sdk.cma.asset.unpublish({ assetId }, current);
     await props.sdk.cma.asset.delete({ assetId });
+    return true;
   } catch {
     // Best-effort cleanup; Contentful owns the asset if cleanup is unavailable.
+    return false;
+  }
+}
+
+async function deleteDraftEntry(entryId: string): Promise<boolean> {
+  try {
+    const current = await props.sdk.cma.entry.get({ entryId }) as unknown as Entry;
+    if (current.sys.publishedVersion !== undefined) return false;
+    await props.sdk.cma.entry.delete({ entryId });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isEntryNotFound(caught: unknown): boolean {
+  return typeof caught === "object" && caught !== null && "status" in caught && caught.status === 404;
+}
+
+async function cleanupEntryAfterCreateFailure(entryId: string, assetId: string): Promise<boolean> {
+  let current: Entry;
+  try {
+    current = await props.sdk.cma.entry.get({ entryId }) as unknown as Entry;
+  } catch (caught) {
+    return isEntryNotFound(caught);
+  }
+  if (getSourceAssetId(current, props.sdk.locales.default) !== assetId) return false;
+  return deleteDraftEntry(entryId);
+}
+
+async function restoreEntry(entry: Entry, currentVersion?: Entry): Promise<boolean> {
+  try {
+    const restore = currentVersion
+      ? { ...entry, sys: { ...entry.sys, version: currentVersion.sys.version } }
+      : entry;
+    await props.sdk.cma.entry.update({ entryId: entry.sys.id }, restore);
+    return true;
+  } catch {
+    return false;
   }
 }
 
 async function createPublishedAsset(file: File, locale: string): Promise<Asset> {
   let uploadId: string | undefined;
+  let assetId: string | undefined;
   let asset: Asset | undefined;
   try {
     phase.value = "Uploading image...";
     const upload = await props.sdk.cma.upload.create({}, { file: await file.arrayBuffer() });
     uploadId = upload.sys.id;
+    assetId = crypto.randomUUID();
     progress.value = 30;
-    asset = await props.sdk.cma.asset.create({}, {
+    asset = await props.sdk.cma.asset.createWithId({ assetId }, {
       fields: {
         title: { [locale]: file.name },
         file: {
@@ -236,7 +278,7 @@ async function createPublishedAsset(file: File, locale: string): Promise<Asset> 
           },
         },
       },
-    });
+    }) as unknown as Asset;
     progress.value = 50;
     phase.value = "Processing image...";
     const processed = await props.sdk.cma.asset.processForLocale(
@@ -247,15 +289,39 @@ async function createPublishedAsset(file: File, locale: string): Promise<Asset> 
     );
     progress.value = 70;
     phase.value = "Publishing image...";
-    return await props.sdk.cma.asset.publish({ assetId: processed.sys.id }, processed);
+    return await props.sdk.cma.asset.publish({ assetId: processed.sys.id }, processed) as unknown as Asset;
   } catch (caught) {
-    if (asset) await cleanupAsset(asset.sys.id);
-    else if (uploadId) {
+    let assetRemoved = false;
+    let assetConfirmedAbsent = false;
+    if (asset) {
+      const cleanupId = typeof asset.sys?.id === "string" && asset.sys.id ? asset.sys.id : assetId;
+      assetRemoved = cleanupId ? await cleanupAsset(cleanupId) : false;
+    } else if (assetId && uploadId) {
+      let remoteAsset: Asset | undefined;
+      try {
+        remoteAsset = await props.sdk.cma.asset.get({ assetId }) as unknown as Asset;
+      } catch (inspectionError) {
+        if (isEntryNotFound(inspectionError)) assetConfirmedAbsent = true;
+        else {
+          throw new Error(`${getErrorMessage(caught, "Image upload failed")}. Asset state could not be confirmed; the asset and upload were retained.`);
+        }
+      }
+      if (remoteAsset) {
+        assetRemoved = await cleanupAsset(assetId);
+        if (!assetRemoved) {
+          throw new Error(`${getErrorMessage(caught, "Image upload failed")}. Asset cleanup could not be confirmed; the asset and upload were retained.`);
+        }
+      }
+    }
+    if (uploadId && (assetRemoved || assetConfirmedAbsent || !assetId)) {
       try {
         await props.sdk.cma.upload.delete({ uploadId });
       } catch {
-        // Best-effort cleanup for an upload without an asset.
+        // Best-effort cleanup after confirming no asset references this upload.
       }
+    }
+    if (asset && !assetRemoved) {
+      throw new Error(`${getErrorMessage(caught, "Image upload failed")}. Asset cleanup could not be confirmed; the asset and upload were retained.`);
     }
     throw caught;
   }
@@ -353,20 +419,26 @@ async function submitUpload(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
+  let attemptedEntryId: string | undefined;
+  let draftEntry: Entry | undefined;
   try {
     newAsset = await createPublishedAsset(selectedFile.value, locale);
     phase.value = "Publishing photo...";
-    const entry = await props.sdk.cma.entry.create({ contentTypeId: "gallery" }, {
-      fields: {
-        location: { [locale]: form.location },
-        date: { [locale]: form.date },
-        type: { [locale]: getPhotoType(newAsset, locale) },
-        category: { [locale]: form.category },
-        alt: { [locale]: altDocument(form.alt) },
-        src: { [locale]: { sys: { type: "Link", linkType: "Asset", id: newAsset.sys.id } } },
+    attemptedEntryId = crypto.randomUUID();
+    draftEntry = await props.sdk.cma.entry.createWithId(
+      { contentTypeId: "gallery", entryId: attemptedEntryId },
+      {
+        fields: {
+          location: { [locale]: form.location },
+          date: { [locale]: form.date },
+          type: { [locale]: getPhotoType(newAsset, locale) },
+          category: { [locale]: form.category },
+          alt: { [locale]: altDocument(form.alt) },
+          src: { [locale]: { sys: { type: "Link", linkType: "Asset", id: newAsset.sys.id } } },
+        },
       },
-    });
-    await props.sdk.cma.entry.publish({ entryId: entry.sys.id }, entry);
+    ) as unknown as Entry;
+    await props.sdk.cma.entry.publish({ entryId: draftEntry.sys.id }, draftEntry);
     progress.value = 100;
     resetForm();
     removeFile();
@@ -374,7 +446,15 @@ async function submitUpload(): Promise<void> {
     props.sdk.notifier.success("Photo published");
   } catch (caught) {
     error.value = getErrorMessage(caught, "Upload failed");
-    if (newAsset) await cleanupAsset(newAsset.sys.id);
+    const draftRemoved = draftEntry
+      ? await deleteDraftEntry(draftEntry.sys.id)
+      : attemptedEntryId
+        ? await cleanupEntryAfterCreateFailure(attemptedEntryId, newAsset?.sys.id ?? "")
+        : true;
+    if (newAsset && draftRemoved) await cleanupAsset(newAsset.sys.id);
+    if (newAsset && !draftRemoved) {
+      error.value = `${error.value}. The image asset was retained because Contentful could not confirm that the incomplete draft was removed.`;
+    }
   } finally {
     uploading.value = false;
     phase.value = "";
@@ -402,8 +482,13 @@ async function submitEdit(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
+  let currentEntry: Entry | undefined;
+  let entryUpdateAttempted = false;
+  let updatedEntryForRestore: Entry | undefined;
+  let publicationAttempted = false;
+  let updatePublished = false;
   try {
-    const currentEntry = await props.sdk.cma.entry.get({ entryId: photo.id }) as unknown as Entry;
+    currentEntry = await props.sdk.cma.entry.get({ entryId: photo.id }) as unknown as Entry;
     const oldAssetId = getSourceAssetId(currentEntry, locale);
     const fields = { ...(currentEntry.fields as Record<string, unknown>) };
     setLocalizedField(fields, "location", locale, form.location);
@@ -421,14 +506,17 @@ async function submitEdit(): Promise<void> {
 
     progress.value = 80;
     phase.value = "Publishing changes...";
-    const updatedEntry = await props.sdk.cma.entry.update(
+    entryUpdateAttempted = true;
+    updatedEntryForRestore = await props.sdk.cma.entry.update(
       { entryId: photo.id },
       { ...currentEntry, fields },
-    );
+    ) as unknown as Entry;
+    publicationAttempted = true;
     const publishedEntry = await props.sdk.cma.entry.publish(
       { entryId: photo.id },
-      updatedEntry,
+      updatedEntryForRestore,
     );
+    updatePublished = true;
     if (newAsset && oldAssetId && oldAssetId !== newAsset.sys.id) {
       await cleanupAsset(oldAssetId);
     }
@@ -453,7 +541,26 @@ async function submitEdit(): Promise<void> {
     props.sdk.notifier.success("Photo saved");
   } catch (caught) {
     error.value = getErrorMessage(caught, "Could not save photo.");
-    if (newAsset) await cleanupAsset(newAsset.sys.id);
+    let publishedUsesNewAsset = false;
+    let publicationStateKnown = !publicationAttempted;
+    if (newAsset && publicationAttempted) {
+      try {
+        const published = await props.sdk.cma.entry.getPublished({
+          query: { "sys.id": photo.id, limit: 1 },
+        }) as unknown as EntryCollection;
+        const publishedEntry = published.items.find((item) => item.sys.id === photo.id);
+        if (publishedEntry) {
+          publishedUsesNewAsset = getSourceAssetId(publishedEntry, locale) === newAsset.sys.id;
+          publicationStateKnown = true;
+        }
+      } catch {
+        // Preserve the asset when Contentful cannot confirm what is live.
+      }
+    }
+    const restored = !entryUpdateAttempted || !currentEntry || await restoreEntry(currentEntry, updatedEntryForRestore);
+    if (newAsset && restored && !updatePublished && publicationStateKnown && !publishedUsesNewAsset) {
+      await cleanupAsset(newAsset.sys.id);
+    }
   } finally {
     uploading.value = false;
     phase.value = "";

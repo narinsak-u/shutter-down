@@ -19,6 +19,24 @@ const openPhoto = (index: number) => {
 const sentinelRef = ref<HTMLElement | null>(null);
 const MASONRY_GAP = 24;
 const pendingImageLoads = new WeakSet<HTMLImageElement>();
+let layoutFrame = 0;
+let gridResizeObserver: ResizeObserver | null = null;
+const pendingPositionedItems = new Set<HTMLElement>();
+
+function scheduleMasonryLayout(): void {
+  if (layoutFrame) return;
+  layoutFrame = requestAnimationFrame(() => {
+    layoutFrame = 0;
+    layoutMasonry();
+  });
+}
+
+function revealGalleryItemAfterLayout(el: Element): void {
+  const item = el as HTMLElement;
+  item.style.visibility = "hidden";
+  pendingPositionedItems.add(item);
+  scheduleMasonryLayout();
+}
 
 /** IntersectionObserver instance for scroll-reveal animation on gallery items. */
 let observer: IntersectionObserver | null = null;
@@ -33,6 +51,7 @@ function getColumnCount(): number {
   if (width <= 900) return 3;
   return 4;
 }
+const initiallyVisiblePhotoCount = getColumnCount();
 
 /** Excludes filtered-out cards that TransitionGroup keeps during its leave animation. */
 function getActiveGalleryItems(grid: HTMLElement): HTMLElement[] {
@@ -50,6 +69,7 @@ function layoutMasonry(): void {
   const items = getActiveGalleryItems(grid);
   if (!items.length) {
     grid.style.height = "0px";
+    pendingPositionedItems.clear();
     return;
   }
 
@@ -57,32 +77,46 @@ function layoutMasonry(): void {
   const columnWidth = (grid.clientWidth - MASONRY_GAP * (columns - 1)) / columns;
   if (columnWidth <= 0) return;
 
-  const columnHeights = Array.from({ length: columns }, () => 0);
-
   items.forEach((item) => {
     item.style.width = `${columnWidth}px`;
 
     const image = item.querySelector("img");
     if (image && !image.complete && !pendingImageLoads.has(image)) {
       pendingImageLoads.add(image);
-      image.addEventListener("load", () => {
-        pendingImageLoads.delete(image);
-        layoutMasonry();
-      }, { once: true });
+      image.addEventListener(
+        "load",
+        () => {
+          pendingImageLoads.delete(image);
+          scheduleMasonryLayout();
+        },
+        { once: true },
+      );
     }
+  });
 
+  const itemHeights = items.map((item) => item.offsetHeight);
+  const columnHeights = Array.from({ length: columns }, () => 0);
+
+  items.forEach((item, index) => {
     let column = 0;
-    for (let index = 1; index < columnHeights.length; index += 1) {
-      if ((columnHeights[index] ?? 0) < (columnHeights[column] ?? 0)) column = index;
+    for (let candidate = 1; candidate < columnHeights.length; candidate += 1) {
+      if ((columnHeights[candidate] ?? 0) < (columnHeights[column] ?? 0)) column = candidate;
     }
 
     const top = columnHeights[column] ?? 0;
     item.style.left = `${column * (columnWidth + MASONRY_GAP)}px`;
     item.style.top = `${top}px`;
-    columnHeights[column] = top + item.offsetHeight + MASONRY_GAP;
+    columnHeights[column] = top + (itemHeights[index] ?? 0) + MASONRY_GAP;
   });
 
   grid.style.height = `${Math.max(...columnHeights) - MASONRY_GAP}px`;
+  for (const item of pendingPositionedItems) {
+    if (item.isConnected) {
+      item.style.visibility = "";
+      item.classList.remove("opacity-0", "translate-y-8");
+    }
+  }
+  pendingPositionedItems.clear();
 }
 
 /** Sets up infinite scroll: loads more photos when sentinel enters viewport with 200px margin. */
@@ -133,8 +167,8 @@ const setupScrollReveal = () => {
 
 /** Initializes gallery on component mount: fetches photos and sets up scroll-reveal animations. */
 onMounted(() => {
-  galleryStore.fetchPhotos(true);
-  window.addEventListener("resize", layoutMasonry);
+  galleryStore.fetchPhotos();
+  window.addEventListener("resize", scheduleMasonryLayout);
   setupScrollReveal();
 });
 
@@ -142,7 +176,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) observer.disconnect();
   if (loadMoreObserver) loadMoreObserver.disconnect();
-  window.removeEventListener("resize", layoutMasonry);
+  if (gridResizeObserver) gridResizeObserver.disconnect();
+  window.removeEventListener("resize", scheduleMasonryLayout);
+  if (layoutFrame) cancelAnimationFrame(layoutFrame);
 });
 
 /** Watches filtered photos: re-runs scroll-reveal and infinite scroll setup when filter changes or photos load. */
@@ -150,7 +186,12 @@ watch(
   () => galleryStore.filteredPhotos,
   async () => {
     await nextTick();
-    layoutMasonry();
+    scheduleMasonryLayout();
+    const grid = document.getElementById("gallery");
+    if (grid && !gridResizeObserver) {
+      gridResizeObserver = new ResizeObserver(scheduleMasonryLayout);
+      gridResizeObserver.observe(grid);
+    }
     setupScrollReveal();
     setupLoadMore();
   },
@@ -187,13 +228,16 @@ watch(
     </nav>
 
     <p
-      v-if="galleryStore.loading"
+      v-if="galleryStore.loading && galleryStore.photos.length === 0"
       class="text-center py-20 text-body-lg font-body-lg text-secondary"
     >
       Loading...
     </p>
 
-    <div v-else-if="galleryStore.error" class="text-center py-20">
+    <div
+      v-else-if="galleryStore.error && galleryStore.photos.length === 0"
+      class="text-center py-20"
+    >
       <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
       <button
         class="text-label-sm font-label-sm text-primary underline cursor-pointer"
@@ -203,13 +247,25 @@ watch(
       </button>
     </div>
 
-    <template v-if="!galleryStore.loading && !galleryStore.error">
+    <div v-if="galleryStore.error && galleryStore.photos.length > 0" class="text-center py-8">
+      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+      <button
+        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        @click="galleryStore.fetchPhotos(true)"
+      >
+        Retry
+      </button>
+    </div>
+
+    <template
+      v-if="galleryStore.photos.length > 0 || (!galleryStore.loading && !galleryStore.error)"
+    >
       <TransitionGroup
         name="gallery"
         tag="div"
         class="gallery-grid"
         id="gallery"
-        @enter="(el: Element) => el.classList.remove('opacity-0', 'translate-y-8')"
+        @enter="revealGalleryItemAfterLayout"
       >
         <GalleryItem
           v-for="(item, index) in galleryStore.filteredPhotos"
@@ -219,6 +275,9 @@ watch(
           :alt="item.alt"
           :location="item.location"
           :date="item.date"
+          :imageWidth="item.imageWidth"
+          :imageHeight="item.imageHeight"
+          :prioritize="index < initiallyVisiblePhotoCount"
           :data-photo-id="item.id"
           @click="openPhoto(index)"
         />

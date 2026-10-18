@@ -39,7 +39,10 @@ const mockEntry = (overrides: Record<string, unknown> = {}) => ({
     category: 'Architecture',
     src: {
       fields: {
-        file: { url: '//images.ctfassets.net/abc/photo.jpg' },
+        file: {
+          url: '//images.ctfassets.net/abc/photo.jpg',
+          details: { image: { width: 1200, height: 800 } },
+        },
       },
     },
     ...overrides,
@@ -47,6 +50,13 @@ const mockEntry = (overrides: Record<string, unknown> = {}) => ({
 })
 
 describe('contentful service', () => {
+
+  it('preserves source image dimensions for stable gallery geometry', async () => {
+    mockGetEntries.mockResolvedValue({ items: [mockEntry()], total: 1 })
+    const result = await fetchPhotos()
+    expect(result.photos[0]).toMatchObject({ imageWidth: 1200, imageHeight: 800 })
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -60,6 +70,8 @@ describe('contentful service', () => {
     expect(result.total).toBe(1)
     expect(result.photos[0]).toEqual({
       id: 'entry-1',
+      imageWidth: 1200,
+      imageHeight: 800,
       src: 'https://images.ctfassets.net/abc/photo.jpg?w=1600&fm=webp',
       thumbSrc: 'https://images.ctfassets.net/abc/photo.jpg?w=600&fit=thumb&fm=webp',
       alt: 'A beautiful photo',
@@ -68,6 +80,18 @@ describe('contentful service', () => {
       type: 'portrait',
       category: 'Architecture',
     })
+  })
+
+  it('keeps Contentful source order when mapping gallery photos', async () => {
+    mockGetEntries.mockResolvedValue({
+      items: [
+        mockEntry(),
+        { ...mockEntry(), sys: { id: 'entry-2' } },
+      ],
+      total: 2,
+    })
+    const result = await fetchPhotos()
+    expect(result.photos.map((photo) => photo.id)).toEqual(['entry-1', 'entry-2'])
   })
 
   it('uses correct content type, limit, skip, and order params', async () => {

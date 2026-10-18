@@ -7,6 +7,7 @@ import {
   createComment,
   createLike,
   deleteLike,
+  fetchOlderComments,
   fetchInteractionSummary,
 } from "@/services/interactions";
 import type { InteractionComment, InteractionSummary } from "@/types/interactions";
@@ -29,6 +30,7 @@ vi.mock("@/services/interactions", () => ({
   createComment: vi.fn(),
   createLike: vi.fn(),
   deleteLike: vi.fn(),
+  fetchOlderComments: vi.fn(),
   fetchInteractionSummary: vi.fn(),
 }));
 
@@ -311,6 +313,44 @@ describe("Lightbox", () => {
     expect(wrapper.find('[aria-label="Like photo"]').text()).toContain("2 likes");
     expect(wrapper.find('[role="alert"]').text()).toContain("Like failed");
   });
+  it("restores a failed optimistic like and allows a successful retry", async () => {
+    vi.mocked(createLike)
+      .mockRejectedValueOnce(new Error("Publication failed"))
+      .mockResolvedValueOnce("like-retried");
+    const wrapper = await openLightbox();
+
+    await wrapper.find('[aria-label="Like photo"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[aria-label="Like photo"]').text()).toContain("2 likes");
+    expect(wrapper.find('[role="alert"]').text()).toContain("Publication failed");
+
+    await wrapper.find('[aria-label="Like photo"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[aria-label="Unlike photo"]').exists()).toBe(true);
+    expect(vi.mocked(createLike)).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores a failed comment draft and shows the comment after retry", async () => {
+    vi.mocked(createComment)
+      .mockRejectedValueOnce(new Error("Publication failed"))
+      .mockResolvedValueOnce(comment("comment-retried", "Retry this comment"));
+    const wrapper = await openLightbox();
+    const input = wrapper.find("textarea");
+    await input.setValue("Retry this comment");
+
+    await wrapper.find("form").trigger("submit");
+    await flushPromises();
+    expect(input.element.value).toBe("Retry this comment");
+    expect(wrapper.text()).not.toContain("Posting…");
+    expect(wrapper.find('[role="alert"]').text()).toContain("Publication failed");
+
+    await wrapper.find("form").trigger("submit");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Retry this comment");
+    expect(input.element.value).toBe("");
+    expect(vi.mocked(createComment)).toHaveBeenCalledTimes(2);
+  });
+
 
   it("optimistically posts a comment and replaces Posting state on success", async () => {
     const request = deferred<InteractionComment>();
@@ -356,26 +396,24 @@ describe("Lightbox", () => {
     expect(vi.mocked(createComment)).not.toHaveBeenCalled();
   });
 
-  it("loads older comments with five-item pagination", async () => {
-    const olderComments = [comment("6", "Older comment"), comment("7")];
-    const nextPage = deferred<InteractionSummary>();
-    vi.mocked(fetchInteractionSummary)
-      .mockResolvedValueOnce(makeSummary())
-      .mockReturnValueOnce(nextPage.promise);
-    const wrapper = await openLightbox();
-    const loadMore = wrapper.findAll("button").find((button) => button.text() === "Load more");
-    if (!loadMore) throw new Error("Load more button was not rendered.");
+  it('loads older comments with five-item pagination', async () => {
+    const olderComments = [comment('6', 'Older comment'), comment('7')]
+    const nextPage = deferred<{ comments: InteractionComment[]; hasMoreComments: boolean }>()
+    vi.mocked(fetchOlderComments).mockReturnValue(nextPage.promise)
+    const wrapper = await openLightbox()
+    const loadMore = wrapper.findAll('button').find((button) => button.text() === 'Load more')
+    if (!loadMore) throw new Error('Load more button was not rendered.')
 
-    await loadMore.trigger("click");
-    expect(loadMore.text()).toBe("Loading…");
-    expect(loadMore.attributes("disabled")).toBeDefined();
-    expect(vi.mocked(fetchInteractionSummary)).toHaveBeenLastCalledWith("single-photo", IP_HASH, 5);
+    await loadMore.trigger('click')
+    expect(loadMore.text()).toBe('Loading…')
+    expect(loadMore.attributes('disabled')).toBeDefined()
+    expect(vi.mocked(fetchOlderComments)).toHaveBeenLastCalledWith('single-photo', 5)
 
-    nextPage.resolve(makeSummary({ comments: olderComments, hasMoreComments: false }));
-    await flushPromises();
-    expect(wrapper.text()).toContain("Older comment");
-    expect(wrapper.findAll("button").some((button) => button.text() === "Load more")).toBe(false);
-  });
+    nextPage.resolve({ comments: olderComments, hasMoreComments: false })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Older comment')
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Load more')).toBe(false)
+  })
 
   it("shows identity and interaction errors accessibly when loading fails", async () => {
     vi.mocked(discoverPublicIp).mockRejectedValue(new Error("IP unavailable"));

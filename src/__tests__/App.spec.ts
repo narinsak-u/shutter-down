@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import type { FetchPhotosResult } from '@/services/contentful'
+
 import App from '../App.vue'
 import router from '../router'
 
@@ -25,9 +27,11 @@ const IntersectionObserverMock = vi.fn<
 vi.stubGlobal('IntersectionObserver', IntersectionObserverMock)
 
 vi.mock('@/services/contentful', () => ({
-  fetchPhotos: vi.fn<() => Promise<unknown[]>>().mockResolvedValue([]),
+  fetchPhotos: vi.fn<() => Promise<FetchPhotosResult>>().mockResolvedValue({
+    photos: [],
+    total: 0,
+  }),
 }))
-
 describe('App', () => {
   it('renders the gallery headline', async () => {
     setActivePinia(createPinia())

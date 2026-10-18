@@ -6,6 +6,9 @@ defineProps<{
   alt: string;
   location: string;
   date: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  prioritize?: boolean;
 }>();
 
 defineEmits<{ click: [] }>();
@@ -19,8 +22,11 @@ defineEmits<{ click: [] }>();
       <img
         :src="thumbSrc"
         :alt="alt"
+        :width="imageWidth"
+        :height="imageHeight"
+        :loading="prioritize ? 'eager' : 'lazy'"
+        :fetchpriority="prioritize ? 'high' : undefined"
         class="w-full h-auto block image-zoom"
-        loading="lazy"
         draggable="false"
       />
     <div class="pt-3 pb-2">
