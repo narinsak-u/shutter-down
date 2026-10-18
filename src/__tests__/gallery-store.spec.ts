@@ -209,8 +209,11 @@ describe('galleryStore', () => {
       timestamp: Date.now() - 900_001,
       data: { photos: cachedPhotos, total: 18 },
     }))
-    const refresh = Promise.withResolvers<FetchPhotosResult>()
-    vi.mocked(fetchPhotos).mockReturnValue(refresh.promise)
+    let rejectRefresh!: (reason?: unknown) => void
+    const refresh = new Promise<FetchPhotosResult>((_resolve, reject) => {
+      rejectRefresh = reject
+    })
+    vi.mocked(fetchPhotos).mockReturnValue(refresh)
 
     const store = useGalleryStore()
     await store.fetchPhotos()
@@ -218,21 +221,24 @@ describe('galleryStore', () => {
     expect(fetchPhotos).toHaveBeenCalledTimes(1)
     expect(store.photos).toEqual(cachedPhotos)
 
-    refresh.reject(new Error('refresh failed'))
+    rejectRefresh(new Error('refresh failed'))
     await vi.waitFor(() => expect(store.loading).toBe(false))
   })
   it('ignores an in-flight page response after a network refresh replaces the list', async () => {
     setCache('gallery-photos', { photos: mockPhotos, total: 10 })
-    const nextPage = Promise.withResolvers<FetchPhotosResult>()
+    let resolveNextPage!: (value: FetchPhotosResult) => void
+    const nextPage = new Promise<FetchPhotosResult>((resolve) => {
+      resolveNextPage = resolve
+    })
     vi.mocked(fetchPhotos)
-      .mockReturnValueOnce(nextPage.promise)
+      .mockReturnValueOnce(nextPage)
       .mockResolvedValueOnce({ photos: [mockPage2[0]!], total: 1 })
 
     const store = useGalleryStore()
     await store.fetchPhotos()
     const loadMore = store.loadMore()
     await store.fetchPhotos(true)
-    nextPage.resolve({ photos: mockPage2, total: 10 })
+    resolveNextPage({ photos: mockPage2, total: 10 })
     await loadMore
 
     expect(vi.mocked(fetchPhotos)).toHaveBeenNthCalledWith(1, 1, 9)
