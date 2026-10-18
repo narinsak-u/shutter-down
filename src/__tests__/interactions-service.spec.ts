@@ -198,6 +198,89 @@ describe('interactions service', () => {
     expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PUT')
     expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-Contentful-Version')).toBe('1')
   })
+  it('compensates a confirmed failed like publication so a retry leaves only the retry published', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-like', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ message: 'publish rejected' }, 500))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'retry-like', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'retry-like', version: 2, publishedVersion: 1 } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLike('photo-1', IP_HASH)).rejects.toThrow(/status 500/)
+    await expect(createLike('photo-1', IP_HASH)).resolves.toBe('retry-like')
+
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(String(fetchMock.mock.calls[2]?.[0])).toContain('/entries/failed-like')
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('DELETE')
+    expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get('X-Contentful-Version')).toBe('1')
+    expect(String(fetchMock.mock.calls[4]?.[0])).toContain('/entries/retry-like/published')
+  })
+
+  it('compensates a confirmed failed comment publication and permits retry', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-comment', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ message: 'publish rejected' }, 500))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(jsonResponse({
+        sys: { id: 'retry-comment', version: 1 },
+        fields: {
+          photoId: { 'en-US': 'photo-1' },
+          ipHash: { 'en-US': IP_HASH },
+          text: { 'en-US': 'hello' },
+          createdAt: { 'en-US': '2026-08-29T12:00:00.000Z' },
+          status: { 'en-US': 'visible' },
+        },
+      }, 201))
+      .mockResolvedValueOnce(jsonResponse({
+        sys: { id: 'retry-comment', version: 2, publishedVersion: 1 },
+        fields: {
+          photoId: { 'en-US': 'photo-1' },
+          ipHash: { 'en-US': IP_HASH },
+          text: { 'en-US': 'hello' },
+          createdAt: { 'en-US': '2026-08-29T12:00:00.000Z' },
+          status: { 'en-US': 'visible' },
+        },
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createComment('photo-1', IP_HASH, 'hello')).rejects.toThrow(/status 500/)
+    await expect(createComment('photo-1', IP_HASH, 'hello')).resolves.toMatchObject({
+      id: 'retry-comment',
+      text: 'hello',
+      status: 'visible',
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(String(fetchMock.mock.calls[2]?.[0])).toContain('/entries/failed-comment')
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('DELETE')
+    expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get('X-Contentful-Version')).toBe('1')
+    expect(String(fetchMock.mock.calls[4]?.[0])).toContain('/entries/retry-comment/published')
+  })
+
+  it('does not compensate when publication has an ambiguous network failure', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'uncertain-like', version: 1 } }, 201))
+      .mockRejectedValueOnce(new TypeError('network timeout'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLike('photo-1', IP_HASH)).rejects.toThrow('network timeout')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PUT')
+  })
+
+  it('reports when draft compensation itself fails after publication rejection', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'like-to-clean', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ message: 'publish rejected' }, 500))
+      .mockResolvedValueOnce(jsonResponse({ message: 'delete rejected' }, 500))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLike('photo-1', IP_HASH)).rejects.toThrow(/Draft cleanup failed.*status 500/)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('DELETE')
+  })
+
 
   it('unpublishes a published like before deleting it with the current version', async () => {
     const fetchMock = vi.fn<typeof fetch>()

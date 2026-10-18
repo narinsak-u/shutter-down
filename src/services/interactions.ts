@@ -18,6 +18,14 @@ interface ContentfulEntry {
   fields?: Record<string, unknown>
 }
 
+class ContentfulHttpError extends Error {
+  constructor(readonly status: number) {
+    super(`Interaction write failed with status ${status}.`)
+    this.name = 'ContentfulHttpError'
+  }
+}
+
+
 function getInteractionConfig(): InteractionConfig {
   return {
     space: import.meta.env.VITE_INTERACTION_SPACE || import.meta.env.VITE_CONTENTFUL_SPACE,
@@ -94,7 +102,7 @@ async function requestManagement(
     ...options,
     headers,
   })
-  if (response.ok === false) throw new Error(`Interaction write failed with status ${response.status}.`)
+  if (response.ok === false) throw new ContentfulHttpError(response.status)
   if (response.status === 204) return undefined
   return readJson(response)
 }
@@ -225,12 +233,30 @@ async function createAndPublish(
   const version = contentfulVersion(createdEntry)
   if (!version) throw new Error('Contentful did not return a version for the new interaction.')
 
-  const publishedPayload = await requestManagement(config, id, {
-    method: 'PUT',
-    headers: {
-      'X-Contentful-Version': version,
-    },
-  }, '/published')
+  let publishedPayload: unknown
+  try {
+    publishedPayload = await requestManagement(config, id, {
+      method: 'PUT',
+      headers: {
+        'X-Contentful-Version': version,
+      },
+    }, '/published')
+  } catch (error) {
+    if (!(error instanceof ContentfulHttpError)) throw error
+
+    try {
+      await requestManagement(config, id, {
+        method: 'DELETE',
+        headers: {
+          'X-Contentful-Version': version,
+        },
+      })
+    } catch (compensationError) {
+      const detail = compensationError instanceof Error ? ` ${compensationError.message}` : ''
+      throw new Error(`${error.message} Draft cleanup failed.${detail}`)
+    }
+    throw error
+  }
   const publishedEntry = asEntry(publishedPayload)
   const publishedId = publishedEntry.sys?.id
   return {
