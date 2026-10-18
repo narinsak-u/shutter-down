@@ -43,6 +43,7 @@ function getColumnCount(): number {
   if (width <= 900) return 3;
   return 4;
 }
+const initiallyVisiblePhotoCount = getColumnCount();
 
 /** Excludes filtered-out cards that TransitionGroup keeps during its leave animation. */
 function getActiveGalleryItems(grid: HTMLElement): HTMLElement[] {
@@ -238,6 +239,7 @@ watch(
           :date="item.date"
           :imageWidth="item.imageWidth"
           :imageHeight="item.imageHeight"
+          :prioritize="index < initiallyVisiblePhotoCount"
           :data-photo-id="item.id"
           @click="openPhoto(index)"
         />

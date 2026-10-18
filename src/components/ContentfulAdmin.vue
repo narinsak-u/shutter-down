@@ -230,9 +230,12 @@ async function deleteDraftEntry(entryId: string): Promise<boolean> {
   }
 }
 
-async function restoreEntry(entry: Entry): Promise<boolean> {
+async function restoreEntry(entry: Entry, currentVersion?: Entry): Promise<boolean> {
   try {
-    await props.sdk.cma.entry.update({ entryId: entry.sys.id }, entry);
+    const restore = currentVersion
+      ? { ...entry, sys: { ...entry.sys, version: currentVersion.sys.version } }
+      : entry;
+    await props.sdk.cma.entry.update({ entryId: entry.sys.id }, restore);
     return true;
   } catch {
     return false;
@@ -428,6 +431,7 @@ async function submitEdit(): Promise<void> {
   let newAsset: Asset | undefined;
   let currentEntry: Entry | undefined;
   let entryUpdateAttempted = false;
+  let updatedEntryForRestore: Entry | undefined;
   let publicationAttempted = false;
   let updatePublished = false;
   try {
@@ -450,14 +454,14 @@ async function submitEdit(): Promise<void> {
     progress.value = 80;
     phase.value = "Publishing changes...";
     entryUpdateAttempted = true;
-    const updatedEntry = await props.sdk.cma.entry.update(
+    updatedEntryForRestore = await props.sdk.cma.entry.update(
       { entryId: photo.id },
       { ...currentEntry, fields },
-    );
+    ) as unknown as Entry;
     publicationAttempted = true;
     const publishedEntry = await props.sdk.cma.entry.publish(
       { entryId: photo.id },
-      updatedEntry,
+      updatedEntryForRestore,
     );
     updatePublished = true;
     if (newAsset && oldAssetId && oldAssetId !== newAsset.sys.id) {
@@ -500,7 +504,7 @@ async function submitEdit(): Promise<void> {
         // Preserve the asset when Contentful cannot confirm what is live.
       }
     }
-    const restored = !entryUpdateAttempted || !currentEntry || await restoreEntry(currentEntry);
+    const restored = !entryUpdateAttempted || !currentEntry || await restoreEntry(currentEntry, updatedEntryForRestore);
     if (newAsset && restored && !updatePublished && publicationStateKnown && !publishedUsesNewAsset) {
       await cleanupAsset(newAsset.sys.id);
     }

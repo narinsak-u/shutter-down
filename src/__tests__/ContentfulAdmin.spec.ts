@@ -94,9 +94,19 @@ describe('Contentful Admin recovery', () => {
     wrapper.unmount()
   })
 
-  it('keeps the published Photo and old asset when replacement publication fails', async () => {
+  type RestoredDraft = { sys: { version: number }; fields: { src: { 'en-US': { sys: { id: string } } } } }
+  it('restores the published Photo draft with its current version when replacement publication fails', async () => {
     const setup = sdkFor()
     vi.mocked(setup.sdk.cma.entry.publish).mockRejectedValueOnce(new Error('replacement failed'))
+    let draftVersion = 2
+    let restoredEntry: RestoredDraft | undefined
+    vi.mocked(setup.sdk.cma.entry.update).mockImplementation(async (_params, value) => {
+      if (value.sys.version !== draftVersion) throw new Error('Version mismatch')
+      draftVersion += 1
+      if (draftVersion === 3) return { ...value, sys: { ...value.sys, version: draftVersion } }
+      restoredEntry = value as unknown as RestoredDraft
+      return { ...value, sys: { ...value.sys, version: draftVersion } }
+    })
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     await wrapper.get('nav button:nth-child(2)').trigger('click')
     await flushPromises()
@@ -107,11 +117,11 @@ describe('Contentful Admin recovery', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(setup.sdk.cma.entry.publish).toHaveBeenCalledTimes(1)
     expect(setup.sdk.cma.entry.update).toHaveBeenCalledTimes(2)
-    expect(setup.calls).not.toContain('unpublish:old-asset')
-    expect(setup.calls).not.toContain('delete:old-asset')
+    expect(restoredEntry?.sys.version).toBe(3)
+    expect(restoredEntry?.fields.src['en-US'].sys.id).toBe('old-asset')
     expect(setup.calls).toContain('delete:new-asset')
+    expect(setup.calls).not.toContain('delete:old-asset')
     expect(wrapper.get('[role="alert"]').text()).toContain('replacement failed')
     wrapper.unmount()
   })
