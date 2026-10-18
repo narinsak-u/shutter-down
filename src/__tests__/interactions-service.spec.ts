@@ -5,6 +5,7 @@ import {
   createLike,
   deleteLike,
   fetchInteractionSummary,
+  fetchOlderComments,
 } from '@/services/interactions'
 
 const IP_HASH = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
@@ -98,6 +99,24 @@ describe('interactions service', () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
       '/spaces/gallery-space/environments/master/entries',
     )
+  })
+
+  it('requests only the next comment page without querying likes', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ items: [], total: 6 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchOlderComments('photo-1', 5)).resolves.toEqual({
+      comments: [],
+      hasMoreComments: true,
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const query = new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams
+    expect(query.get('content_type')).toBe('photoComment')
+    expect(query.get('order')).toBe('-fields.createdAt')
+    expect(query.get('skip')).toBe('5')
+    expect(query.get('limit')).toBe('5')
+    expect(query.has('fields.ipHash')).toBe(false)
   })
 
   it('uses skip and limit for older comments', async () => {
