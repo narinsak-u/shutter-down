@@ -81,6 +81,47 @@ afterEach(() => {
 })
 
 describe('Gallery', () => {
+  it('presents a clear page heading and exposes the selected category', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({
+      photos: [photo('nature'), { ...photo('building'), category: 'Architecture' }],
+      total: 2,
+    })
+    wrapper = mount(Gallery)
+    await flushPromises()
+
+    expect(wrapper.findAll('h1')).toHaveLength(1)
+    expect(wrapper.get('h1').text()).toBe('Eyes up, shutter down.')
+    expect(wrapper.find('h2').exists()).toBe(false)
+
+    const natureFilter = wrapper.get('nav').findAll('button').find((button) => button.text() === 'Nature')
+    expect(natureFilter?.attributes('aria-pressed')).toBe('false')
+    await natureFilter?.trigger('click')
+
+    expect(natureFilter?.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('button[aria-pressed="true"]')).toHaveLength(1)
+    expect(wrapper.findAll('button[aria-pressed="false"]')).toHaveLength(3)
+    expect(wrapper.findAll('img')).toHaveLength(1)
+    expect(wrapper.get('img').attributes('alt')).toBe('Photo nature')
+  })
+
+  it('opens the focused Photo with keyboard activation in the lightbox', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({
+      photos: [photo('first'), { ...photo('second'), category: 'Architecture' }],
+      total: 2,
+    })
+    wrapper = mount(Gallery)
+    await flushPromises()
+
+    const photoControl = wrapper.get('button[aria-label="Photo second"]')
+    expect(photoControl.element.tagName).toBe('BUTTON')
+    expect(photoControl.attributes('type')).toBe('button')
+    await photoControl.trigger('keydown.enter')
+
+    const galleryStore = useGalleryStore()
+    expect(galleryStore.lightboxOpen).toBe(true)
+    expect(galleryStore.lightboxIndex).toBe(1)
+  })
+
   it('assigns every card width before reading heights and positions cards by shortest column', async () => {
     vi.mocked(fetchPhotos).mockResolvedValueOnce({
       photos: [photo('one'), photo('two'), photo('three'), photo('four'), photo('five')],

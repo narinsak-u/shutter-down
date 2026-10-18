@@ -204,20 +204,25 @@ watch(
     class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop md:mx-10 min-h-screen"
   >
     <section class="mb-16 md:mb-20 max-w-2xl">
-      <h2 class="text-headline-xl font-pacifico text-primary mb-6">Eyes up, shutter down. 📷</h2>
+      <h1 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h1>
       <p class="text-body-md font-body-md text-secondary max-w-xl">
         Walk around, frame the shot, and immediately move on to the next thing without overthinking
         it.
       </p>
     </section>
 
-    <nav class="flex items-center gap-8 mb-12 overflow-x-auto no-scrollbar">
+    <nav
+      aria-label="Photo categories"
+      class="flex items-center gap-8 mb-12 overflow-x-auto no-scrollbar"
+    >
       <button
         v-for="category in categories"
         :key="category"
+        type="button"
+        :aria-pressed="galleryStore.activeFilter === category"
         @click="galleryStore.setFilter(category)"
         :class="[
-          'text-label-sm cursor-pointer font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1',
+          'text-label-sm cursor-pointer font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary',
           galleryStore.activeFilter === category
             ? 'text-primary border-b-2 border-primary'
             : 'text-secondary hover:text-primary',
@@ -278,7 +283,6 @@ watch(
           :imageWidth="item.imageWidth"
           :imageHeight="item.imageHeight"
           :prioritize="index < initiallyVisiblePhotoCount"
-          :data-photo-id="item.id"
           @click="openPhoto(index)"
         />
       </TransitionGroup>
