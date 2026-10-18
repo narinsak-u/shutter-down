@@ -175,7 +175,7 @@ describe("Lightbox", () => {
       ]),
     );
   });
-  it("presents the photo as the primary region with identifiable close and navigation controls", async () => {
+  it('presents the photo as the primary region with identifiable close and navigation controls', async () => {
     const wrapper = mount(LightboxComponent, {
       props: { items, modelValue: true, index: 0 },
     });
@@ -194,22 +194,21 @@ describe("Lightbox", () => {
     expect(dialog.find('[aria-label="Next image"]').exists()).toBe(true);
   });
 
-  it("closes with the identifiable close control", async () => {
+  it('closes with the identifiable close control', async () => {
     const wrapper = mount(LightboxComponent, {
       props: { items: single, modelValue: true, index: 0 },
     });
-
-    await wrapper.find('[aria-label="Close lightbox"]').trigger("click");
-    expect(wrapper.emitted("update:modelValue")?.[0]?.[0]).toBe(false);
+    await wrapper.find('[aria-label="Close lightbox"]').trigger('click');
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe(false);
   });
 
-  it("supports keyboard navigation between Photos", () => {
+  it('supports keyboard navigation between Photos', () => {
     const wrapper = mount(LightboxComponent, {
       props: { items, modelValue: true, index: 0 },
     });
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
-    expect(wrapper.emitted("update:index")?.[0]?.[0]).toBe(1);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(wrapper.emitted('update:index')?.[0]?.[0]).toBe(1);
   });
 
 
