@@ -398,10 +398,8 @@ describe("Lightbox", () => {
 
   it("loads older comments with five-item pagination", async () => {
     const olderComments = [comment("6", "Older comment"), comment("7")];
-    const nextPage = deferred<InteractionSummary>();
-    vi.mocked(fetchInteractionSummary)
-      .mockResolvedValueOnce(makeSummary())
-      .mockReturnValueOnce(nextPage.promise);
+    const nextPage = deferred<{ comments: InteractionComment[]; hasMoreComments: boolean }>();
+    vi.mocked(fetchOlderComments).mockReturnValue(nextPage.promise);
     const wrapper = await openLightbox();
     const loadMore = wrapper.findAll("button").find((button) => button.text() === "Load more");
     if (!loadMore) throw new Error("Load more button was not rendered.");
@@ -411,7 +409,7 @@ describe("Lightbox", () => {
     expect(loadMore.attributes("disabled")).toBeDefined();
     expect(vi.mocked(fetchOlderComments)).toHaveBeenLastCalledWith("single-photo", 5);
 
-    nextPage.resolve(makeSummary({ comments: olderComments, hasMoreComments: false }));
+    nextPage.resolve({ comments: olderComments, hasMoreComments: false });
     await flushPromises();
     expect(wrapper.text()).toContain("Older comment");
     expect(wrapper.findAll("button").some((button) => button.text() === "Load more")).toBe(false);

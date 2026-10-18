@@ -223,7 +223,7 @@ async function deleteDraftEntry(entryId: string): Promise<boolean> {
   try {
     const current = await props.sdk.cma.entry.get({ entryId }) as unknown as Entry;
     if (current.sys.publishedVersion !== undefined) return false;
-    await props.sdk.cma.entry.delete({ entryId }, current);
+    await props.sdk.cma.entry.delete({ entryId });
     return true;
   } catch {
     return false;
@@ -489,10 +489,13 @@ async function submitEdit(): Promise<void> {
     if (newAsset && publicationAttempted) {
       try {
         const published = await props.sdk.cma.entry.getPublished({
-          entryId: photo.id,
-        }) as unknown as Entry;
-        publishedUsesNewAsset = getSourceAssetId(published, locale) === newAsset.sys.id;
-        publicationStateKnown = true;
+          query: { "sys.id": photo.id, limit: 1 },
+        }) as unknown as EntryCollection;
+        const publishedEntry = published.items.find((item) => item.sys.id === photo.id);
+        if (publishedEntry) {
+          publishedUsesNewAsset = getSourceAssetId(publishedEntry, locale) === newAsset.sys.id;
+          publicationStateKnown = true;
+        }
       } catch {
         // Preserve the asset when Contentful cannot confirm what is live.
       }

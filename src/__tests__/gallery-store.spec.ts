@@ -118,7 +118,7 @@ describe('galleryStore', () => {
     expect(vi.mocked(fetchPhotos)).not.toHaveBeenCalled()
     vi.mocked(fetchPhotos).mockResolvedValue({ photos: mockPage2, total: 10 })
     await store.loadMore()
-    expect(vi.mocked(fetchPhotos)).toHaveBeenLastCalledWith(2, 9)
+    expect(vi.mocked(fetchPhotos)).toHaveBeenLastCalledWith(1, 9)
     expect(store.photos).toEqual([...mockPhotos, ...mockPage2])
   })
 
@@ -156,7 +156,7 @@ describe('galleryStore', () => {
     expect(store.loading).toBe(true)
     expect(vi.mocked(fetchPhotos)).toHaveBeenCalledWith(0, 9)
 
-    resolveDeferred({ photos: mockPage2, total: 2 })
+    resolveDeferred({ photos: mockPage2, total: 1 })
     await deferred
     await Promise.resolve()
 

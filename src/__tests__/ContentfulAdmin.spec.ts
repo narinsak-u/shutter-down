@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import type { PageAppSDK } from '@contentful/app-sdk'
 import ContentfulAdmin from '@/components/ContentfulAdmin.vue'
@@ -78,11 +79,16 @@ describe('Contentful Admin recovery', () => {
     const setup = sdkFor()
     vi.mocked(setup.sdk.cma.entry.publish).mockRejectedValueOnce(new Error('publish failed'))
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    vi.mocked(setup.sdk.cma.entry.get).mockResolvedValueOnce({
+      ...entry('draft-1', 'new-asset'),
+      sys: { id: 'draft-1', version: 2 },
+    } as never)
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'contentful-photo')
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
-    expect(setup.sdk.cma.entry.delete).toHaveBeenCalledWith({ entryId: 'draft-1' }, expect.anything())
+    expect(setup.sdk.cma.entry.delete).toHaveBeenCalledWith({ entryId: 'draft-1' })
     expect(setup.calls.indexOf('delete-entry:draft-1')).toBeLessThan(setup.calls.indexOf('delete:new-asset'))
     expect(wrapper.get('[role="alert"]').text()).toContain('publish failed')
     wrapper.unmount()
@@ -93,10 +99,13 @@ describe('Contentful Admin recovery', () => {
     vi.mocked(setup.sdk.cma.entry.publish).mockRejectedValueOnce(new Error('replacement failed'))
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     await wrapper.get('nav button:nth-child(2)').trigger('click')
+    await flushPromises()
     await wrapper.findAll('button').find((button) => button.text().includes('Existing location'))!.trigger('click')
+    await flushPromises()
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'edit-photo')
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
     expect(setup.sdk.cma.entry.publish).toHaveBeenCalledTimes(1)
     expect(setup.sdk.cma.entry.update).toHaveBeenCalledTimes(2)
@@ -114,13 +123,20 @@ describe('Contentful Admin recovery', () => {
     })
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     await wrapper.get('nav button:nth-child(2)').trigger('click')
+    await flushPromises()
     await wrapper.findAll('button').find((button) => button.text().includes('Existing location'))!.trigger('click')
+    await flushPromises()
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'edit-photo')
-    vi.mocked(setup.sdk.cma.entry.getPublished).mockResolvedValue(entry('photo-1', 'new-asset') as never)
+    vi.mocked(setup.sdk.cma.entry.getPublished).mockResolvedValue({
+      items: [entry('photo-1', 'new-asset')],
+    } as never)
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
-    expect(setup.sdk.cma.entry.getPublished).toHaveBeenCalledWith({ entryId: 'photo-1' })
+    expect(setup.sdk.cma.entry.getPublished).toHaveBeenCalledWith({
+      query: { 'sys.id': 'photo-1', limit: 1 },
+    })
     expect(setup.calls).not.toContain('delete:new-asset')
     expect(setup.calls).not.toContain('unpublish:new-asset')
     expect(wrapper.get('[role="alert"]').text()).toContain('response lost after publication')
@@ -130,10 +146,13 @@ describe('Contentful Admin recovery', () => {
     const setup = sdkFor()
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     await wrapper.get('nav button:nth-child(2)').trigger('click')
+    await flushPromises()
     await wrapper.findAll('button').find((button) => button.text().includes('Existing location'))!.trigger('click')
+    await flushPromises()
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'edit-photo')
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
     expect(setup.calls.indexOf('publish:photo-1')).toBeLessThan(setup.calls.indexOf('unpublish:old-asset'))
     expect(setup.calls).toContain('delete:old-asset')
@@ -160,6 +179,7 @@ describe('Contentful Admin recovery', () => {
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'contentful-photo')
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
     expect(setup.sdk.cma.entry.create).not.toHaveBeenCalled()
     expect(wrapper.get('[role="alert"]').text()).toContain('image stage failed')
@@ -178,6 +198,7 @@ describe('Contentful Admin recovery', () => {
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'contentful-photo')
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
     expect(setup.calls).toContain('delete:new-asset')
     expect(wrapper.get('[role="alert"]').text()).toContain('draft creation failed')
@@ -189,10 +210,13 @@ describe('Contentful Admin recovery', () => {
     vi.mocked(setup.sdk.cma.entry.update).mockRejectedValueOnce(new Error('entry update failed'))
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     await wrapper.get('nav button:nth-child(2)').trigger('click')
+    await flushPromises()
     await wrapper.findAll('button').find((button) => button.text().includes('Existing location'))!.trigger('click')
+    await flushPromises()
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'edit-photo')
     await wrapper.get('form').trigger('submit')
+    await flushPromises()
 
     expect(setup.sdk.cma.entry.update).toHaveBeenCalledTimes(2)
     expect(setup.sdk.cma.entry.publish).not.toHaveBeenCalled()

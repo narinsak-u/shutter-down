@@ -47,11 +47,11 @@ First read `src/main.ts` → `src/App.vue` and `src/router/index.ts` → the gal
 ```text
 Gallery mounts
   ↓
-Fetch first Contentful page (9 photos); update gallery/cache state
+Render fresh cached Photos immediately; show stale cached Photos while refreshing the first page in the background; otherwise fetch before display
   ↓
 Filter by category or open a photo
   ↓
-When the scroll sentinel enters view, fetch and append the next page
+When the scroll sentinel enters view, append the next page; schedule masonry layout in one animation frame after Photo changes, image loads, or resize
 ```
 
 **Interact with a photo** — `src/components/Lightbox.vue`, `src/services/anonymousIdentity.ts`, `src/services/interactions.ts`
@@ -59,11 +59,13 @@ When the scroll sentinel enters view, fetch and append the next page
 ```text
 Open lightbox for a photo
   ↓
-Resolve visitor identity and load likes plus visible comment page
+Resolve visitor identity and load likes plus the first comment page
   ↓
-Create/delete a like or validate and submit a comment
+Fetch older comment pages only when requested; ignore responses for a Photo that is no longer open
   ↓
-Write interaction to Contentful; refresh/update the displayed state
+Create/delete a like or submit a comment; compensate failed Contentful publication when state is known
+  ↓
+Update displayed state or report a recoverable failure
 ```
 
 **Publish or manage photos** — `src/App.vue`, `src/components/ContentfulAdmin.vue`
@@ -73,14 +75,14 @@ Open the app embedded in Contentful; initialize the Contentful SDK
   ↓
 Upload mode: validate image type/size → create and publish asset
   ↓
-Create and publish gallery entry; or manage mode: load published entries
+Create and publish the Photo; on failure, remove its draft before deleting the unused asset when safe
   ↓
-Save metadata/image replacement to the existing entry and publish it
+Manage mode: edit the existing Photo and publish a replacement before removing its old asset
 ```
 
 ## Scripts
 
-Evidence: `package.json`, `AGENTS.md`. Commands listed here were **not exercised** during this catchup.
+Evidence: `package.json`, `AGENTS.md`. Unit tests and the production build were exercised during implementation; dev and preview were not exercised here.
 
 | Command | Purpose |
 |---|---|
@@ -98,5 +100,5 @@ Evidence: `package.json`, `AGENTS.md`. Commands listed here were **not exercised
 - `src/router/index.ts` defines client routes, not server endpoints. `/admin` is a redirect convenience, not authentication; management UI is mounted in the Contentful iframe and relies on Contentful installation/editor permissions (`docs/adr/0006-contentful-as-transitional-write-store.md`).
 - GitHub Actions tests and builds on pushes/PRs targeting `main`; deploys only pushes to `main` (`.github/workflows/deploy.yml`).
 <!-- skill-state
-output_sha256: 8dbb3ab8b6500791beaa64aae4901ff9f71988db322559f32cc88ede48080398
+output_sha256: 3aa3992961f1661b8b70dd2f318538422a36b1393bd1aee12eb16c6c51e7b8ed
 -->
