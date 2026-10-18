@@ -6,6 +6,7 @@ import {
   createComment,
   createLike,
   deleteLike,
+  fetchOlderComments,
   fetchInteractionSummary,
 } from "@/services/interactions";
 import type { AnonymousIdentity } from "@/services/anonymousIdentity";
