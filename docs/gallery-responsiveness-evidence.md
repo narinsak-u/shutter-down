@@ -29,8 +29,8 @@ input.
 | Non-input layout shifts / total score | 5 / 0.2047 | 3 / 0.0779 | 7 / 0.2259 | 2 / 0.0007 |
 
 The final run had fewer layout events at both widths, but longer summed layout and style-update
-durations. Initial desktop CLS was zero in the final run versus 0.22 in the baseline; the mobile
-initial CLS was zero in both. One run per condition does not establish a performance improvement.
+durations. Initial desktop CLS was zero in the final run versus 0.04 in the baseline; mobile initial
+CLS was zero in both. One run per condition does not establish a performance improvement.
 Renderer event totals are not end-to-end settle times.
 
 ## User-visible checks and limitations
