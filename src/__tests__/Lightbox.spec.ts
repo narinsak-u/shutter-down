@@ -7,6 +7,7 @@ import {
   createComment,
   createLike,
   deleteLike,
+  fetchOlderComments,
   fetchInteractionSummary,
 } from "@/services/interactions";
 import type { InteractionComment, InteractionSummary } from "@/types/interactions";
@@ -29,6 +30,7 @@ vi.mock("@/services/interactions", () => ({
   createComment: vi.fn(),
   createLike: vi.fn(),
   deleteLike: vi.fn(),
+  fetchOlderComments: vi.fn(),
   fetchInteractionSummary: vi.fn(),
 }));
 
@@ -369,7 +371,7 @@ describe("Lightbox", () => {
     await loadMore.trigger("click");
     expect(loadMore.text()).toBe("Loading…");
     expect(loadMore.attributes("disabled")).toBeDefined();
-    expect(vi.mocked(fetchInteractionSummary)).toHaveBeenLastCalledWith("single-photo", IP_HASH, 5);
+    expect(vi.mocked(fetchOlderComments)).toHaveBeenLastCalledWith("single-photo", 5);
 
     nextPage.resolve(makeSummary({ comments: olderComments, hasMoreComments: false }));
     await flushPromises();

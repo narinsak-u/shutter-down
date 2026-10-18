@@ -3,9 +3,8 @@ import type {
   InteractionConfig,
   InteractionSummary,
 } from '@/types/interactions'
-
-const DELIVERY_API = 'https://cdn.contentful.com'
-const MANAGEMENT_API = 'https://api.contentful.com'
+import { fetchCommentPage, mapCommentPageItems } from '@/services/comment-pages'
+ 
 const DEFAULT_COMMENT_LIMIT = 5
 const MAX_COMMENT_LENGTH = 500
 
@@ -146,7 +145,7 @@ function responseTotal(response: ContentfulResponse): number {
     : responseItems(response).length
 }
 
-/** Reads the current like count, viewer like, and one paginated page of comments. */
+/** Reads the current like count, viewer like, and first page of comments. */
 export async function fetchInteractionSummary(
   photoId: string,
   ipHash: string,
@@ -158,40 +157,35 @@ export async function fetchInteractionSummary(
   const pagination = normalizePagination(skip, limit)
   const config = getInteractionConfig()
   requireConfig(config)
-
-  const [likes, viewerLikes, comments] = await Promise.all([
+  const [likes, viewerLikes, page] = await Promise.all([
     requestDelivery(config, {
-      content_type: 'photoLike',
-      'fields.photoId': normalizedPhotoId,
-      limit: '1',
-      select: 'sys.id',
+      content_type: 'photoLike', 'fields.photoId': normalizedPhotoId, limit: '1', select: 'sys.id',
     }),
     requestDelivery(config, {
-      content_type: 'photoLike',
-      'fields.photoId': normalizedPhotoId,
-      'fields.ipHash': normalizedIpHash,
-      limit: '1',
-      select: 'sys.id',
+      content_type: 'photoLike', 'fields.photoId': normalizedPhotoId, 'fields.ipHash': normalizedIpHash, limit: '1', select: 'sys.id',
     }),
-    requestDelivery(config, {
-      content_type: 'photoComment',
-      'fields.photoId': normalizedPhotoId,
-      'fields.status': 'visible',
-      order: '-fields.createdAt',
-      skip: String(pagination.skip),
-      limit: String(pagination.limit),
-    }),
+    fetchCommentPage(config, normalizedPhotoId, pagination.skip, pagination.limit),
   ])
-
-  const commentItems = responseItems(comments)
   const viewerLikeId = asEntry(responseItems(viewerLikes)[0]).sys?.id
   return {
     likeCount: responseTotal(likes),
     likedByViewer: responseTotal(viewerLikes) > 0,
     ...(typeof viewerLikeId === 'string' && viewerLikeId ? { viewerLikeId } : {}),
-    comments: commentItems.map((comment) => normalizeComment(comment)),
-    hasMoreComments: pagination.skip + commentItems.length < responseTotal(comments),
+    ...page,
   }
+}
+
+/** Reads only one page of visible comments. */
+export async function fetchOlderComments(
+  photoId: string,
+  skip: number,
+  limit = DEFAULT_COMMENT_LIMIT,
+): Promise<{ comments: InteractionComment[]; hasMoreComments: boolean }> {
+  const normalizedPhotoId = requireIdentifier(photoId, 'photoId')
+  const pagination = normalizePagination(skip, limit)
+  const config = getInteractionConfig()
+  requireConfig(config)
+  return fetchCommentPage(config, normalizedPhotoId, pagination.skip, pagination.limit)
 }
 
 function managementFields(fields: Record<string, string>): Record<string, Record<string, string>> {

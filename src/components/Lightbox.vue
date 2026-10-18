@@ -188,7 +188,7 @@ async function loadMoreComments(): Promise<void> {
   interactionError.value = null;
 
   try {
-    const page = await fetchInteractionSummary(photoId, viewer.ipHash, loadedCommentCount);
+    const page = await fetchOlderComments(photoId, loadedCommentCount);
     if (requestId !== interactionRequestId || !isCurrentPhoto(photoId)) return;
 
     comments.value = [...comments.value, ...page.comments];
