@@ -41,7 +41,9 @@ function sdkFor(overrides: Record<string, unknown> = {}) {
         delete: vi.fn().mockImplementation(async ({ assetId }) => { calls.push(`delete:${assetId}`) }),
       },
       entry: {
-        getPublished: vi.fn().mockResolvedValue({ items: [existingEntry], includes: { Asset: [asset('old-asset')] } }),
+        getPublished: vi.fn().mockImplementation(async (params) => params.query
+          ? { items: [existingEntry], includes: { Asset: [asset('old-asset')] } }
+          : existingEntry),
         get: vi.fn().mockResolvedValue(existingEntry),
         create: vi.fn().mockResolvedValue({ ...entry('draft-1', 'new-asset'), sys: { id: 'draft-1', version: 1 } }),
         publish: vi.fn().mockImplementation(async (_params, value) => { calls.push(`publish:${value.sys.id}`); return value }),
@@ -104,7 +106,26 @@ describe('Contentful Admin recovery', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('replacement failed')
     wrapper.unmount()
   })
+  it('retains the replacement asset when publish succeeds remotely but its response rejects', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.entry.publish).mockImplementationOnce(async (_params, value) => {
+      setup.calls.push(`publish:${value.sys.id}`)
+      throw new Error('response lost after publication')
+    })
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await wrapper.get('nav button:nth-child(2)').trigger('click')
+    await wrapper.findAll('button').find((button) => button.text().includes('Existing location'))!.trigger('click')
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'edit-photo')
+    vi.mocked(setup.sdk.cma.entry.getPublished).mockResolvedValue(entry('photo-1', 'new-asset') as never)
+    await wrapper.get('form').trigger('submit')
 
+    expect(setup.sdk.cma.entry.getPublished).toHaveBeenCalledWith({ entryId: 'photo-1' })
+    expect(setup.calls).not.toContain('delete:new-asset')
+    expect(setup.calls).not.toContain('unpublish:new-asset')
+    expect(wrapper.get('[role="alert"]').text()).toContain('response lost after publication')
+    wrapper.unmount()
+  })
   it('publishes the replacement Photo before removing its former asset', async () => {
     const setup = sdkFor()
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })

@@ -426,8 +426,7 @@ async function submitEdit(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
-  let currentEntry: Entry | undefined;
-  let entryUpdateAttempted = false;
+  let publicationAttempted = false;
   let updatePublished = false;
   try {
     currentEntry = await props.sdk.cma.entry.get({ entryId: photo.id }) as unknown as Entry;
@@ -453,6 +452,7 @@ async function submitEdit(): Promise<void> {
       { entryId: photo.id },
       { ...currentEntry, fields },
     );
+    publicationAttempted = true;
     const publishedEntry = await props.sdk.cma.entry.publish(
       { entryId: photo.id },
       updatedEntry,
@@ -480,10 +480,24 @@ async function submitEdit(): Promise<void> {
     removeFile();
     success.value = "Photo saved successfully.";
     props.sdk.notifier.success("Photo saved");
-  } catch (caught) {
     error.value = getErrorMessage(caught, "Could not save photo.");
+    let publishedUsesNewAsset = false;
+    let publicationStateKnown = !publicationAttempted;
+    if (newAsset && publicationAttempted) {
+      try {
+        const published = await props.sdk.cma.entry.getPublished({
+          entryId: photo.id,
+        }) as unknown as Entry;
+        publishedUsesNewAsset = getSourceAssetId(published, locale) === newAsset.sys.id;
+        publicationStateKnown = true;
+      } catch {
+        // Preserve the asset when Contentful cannot confirm what is live.
+      }
+    }
     const restored = !entryUpdateAttempted || !currentEntry || await restoreEntry(currentEntry);
-    if (newAsset && restored && !updatePublished) await cleanupAsset(newAsset.sys.id);
+    if (newAsset && restored && !updatePublished && publicationStateKnown && !publishedUsesNewAsset) {
+      await cleanupAsset(newAsset.sys.id);
+    }
   } finally {
     uploading.value = false;
     phase.value = "";
