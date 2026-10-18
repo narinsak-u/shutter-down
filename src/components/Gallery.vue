@@ -77,29 +77,36 @@ function layoutMasonry(): void {
   const columnWidth = (grid.clientWidth - MASONRY_GAP * (columns - 1)) / columns;
   if (columnWidth <= 0) return;
 
-  const columnHeights = Array.from({ length: columns }, () => 0);
-
   items.forEach((item) => {
     item.style.width = `${columnWidth}px`;
 
     const image = item.querySelector("img");
     if (image && !image.complete && !pendingImageLoads.has(image)) {
       pendingImageLoads.add(image);
-      image.addEventListener("load", () => {
-        pendingImageLoads.delete(image);
-        scheduleMasonryLayout();
-      }, { once: true });
+      image.addEventListener(
+        "load",
+        () => {
+          pendingImageLoads.delete(image);
+          scheduleMasonryLayout();
+        },
+        { once: true },
+      );
     }
+  });
 
+  const itemHeights = items.map((item) => item.offsetHeight);
+  const columnHeights = Array.from({ length: columns }, () => 0);
+
+  items.forEach((item, index) => {
     let column = 0;
-    for (let index = 1; index < columnHeights.length; index += 1) {
-      if ((columnHeights[index] ?? 0) < (columnHeights[column] ?? 0)) column = index;
+    for (let candidate = 1; candidate < columnHeights.length; candidate += 1) {
+      if ((columnHeights[candidate] ?? 0) < (columnHeights[column] ?? 0)) column = candidate;
     }
 
     const top = columnHeights[column] ?? 0;
     item.style.left = `${column * (columnWidth + MASONRY_GAP)}px`;
     item.style.top = `${top}px`;
-    columnHeights[column] = top + item.offsetHeight + MASONRY_GAP;
+    columnHeights[column] = top + (itemHeights[index] ?? 0) + MASONRY_GAP;
   });
 
   grid.style.height = `${Math.max(...columnHeights) - MASONRY_GAP}px`;

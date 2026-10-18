@@ -70,7 +70,52 @@ afterEach(() => {
   transitionStyle = undefined
 })
 
-describe('Gallery layout', () => {
+describe('Gallery', () => {
+  it('assigns every card width before reading heights and positions cards by shortest column', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({
+      photos: [photo('one'), photo('two'), photo('three'), photo('four'), photo('five')],
+      total: 5,
+    })
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 })
+    wrapper = mount(Gallery, { attachTo: document.body, global: { stubs: { TransitionGroup: false } } })
+    await flushPromises()
+    await nextTick()
+
+    const grid = wrapper.get('#gallery').element as HTMLElement
+    Object.defineProperty(grid, 'clientWidth', { configurable: true, value: 1000 })
+    const cards = [...wrapper.findAll('.gallery-item')]
+    const heights = [100, 180, 120, 80, 60]
+    const reads: HTMLElement[] = []
+    cards.forEach((card, index) => {
+      const element = card.element as HTMLElement
+      Object.defineProperty(element, 'offsetHeight', {
+        configurable: true,
+        get() {
+          expect(cards.every((candidate) => (candidate.element as HTMLElement).style.width !== '')).toBe(true)
+          expect(cards.every((candidate) => (candidate.element as HTMLElement).style.left === '')).toBe(true)
+          expect(cards.every((candidate) => (candidate.element as HTMLElement).style.top === '')).toBe(true)
+          reads.push(element)
+          return heights[index] ?? 0
+        },
+      })
+    })
+
+    frameCallbacks.splice(0).forEach((callback) => callback(0))
+    await nextTick()
+
+    expect(reads).toHaveLength(5)
+    expect(cards.map((card) => [
+      (card.element as HTMLElement).style.left,
+      (card.element as HTMLElement).style.top,
+    ])).toEqual([
+      ['0px', '0px'],
+      ['256px', '0px'],
+      ['512px', '0px'],
+      ['768px', '0px'],
+      ['768px', '104px'],
+    ])
+  })
+
   it('does not reveal appended Photos before their masonry positions are assigned', async () => {
     vi.mocked(fetchPhotos)
       .mockResolvedValueOnce({ photos: [photo('first')], total: 2 })
@@ -99,8 +144,7 @@ describe('Gallery layout', () => {
     expect((appendedPhoto.element as HTMLElement).style.top).toBe('24px')
     expect((appendedPhoto.element as HTMLElement).style.visibility).toBe('')
   })
-})
-describe('Gallery loading states', () => {
+
   it('keeps stale Photos visible while a background refresh is unresolved', async () => {
     localStorage.setItem(
       'cache:gallery-photos',

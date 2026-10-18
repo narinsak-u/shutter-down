@@ -7,12 +7,14 @@ interface ContentfulResponse {
   total?: unknown
 }
 
+/** Result of loading one page of comments and whether older comments remain. */
+export interface CommentPage {
+  comments: InteractionComment[]
+  hasMoreComments: boolean
+}
+
 /** Maps raw Contentful entries to comments and determines whether another page remains. */
-export function mapCommentPageItems(
-  items: unknown[],
-  skip: number,
-  total: number,
-): { comments: InteractionComment[]; hasMoreComments: boolean } {
+export function mapCommentPageItems(items: unknown[], skip: number, total: number): CommentPage {
   return { comments: items.map(normalizeComment), hasMoreComments: skip + items.length < total }
 }
 
@@ -45,8 +47,11 @@ export async function fetchCommentPage(
   photoId: string,
   skip: number,
   limit: number,
-): Promise<{ comments: InteractionComment[]; hasMoreComments: boolean }> {
-  const url = new URL(`/spaces/${encodeURIComponent(config.space)}/environments/${encodeURIComponent(config.environment)}/entries`, DELIVERY_API)
+): Promise<CommentPage> {
+  const url = new URL(
+    `/spaces/${encodeURIComponent(config.space)}/environments/${encodeURIComponent(config.environment)}/entries`,
+    DELIVERY_API,
+  )
   const query = {
     content_type: 'photoComment',
     'fields.photoId': photoId,

@@ -82,7 +82,7 @@ Manage mode: edit the existing Photo and publish a replacement before removing i
 
 ## Scripts
 
-Evidence: `package.json`, `AGENTS.md`. Unit tests and the production build were exercised during implementation; dev and preview were not exercised here.
+Evidence: `package.json`, `AGENTS.md`, and [`gallery-responsiveness-evidence.md`](gallery-responsiveness-evidence.md). Unit tests and the production build were exercised during implementation; local dev-server browser behavior was exercised for Gallery responsiveness, but preview was not exercised here.
 
 | Command | Purpose |
 |---|---|
@@ -100,5 +100,5 @@ Evidence: `package.json`, `AGENTS.md`. Unit tests and the production build were 
 - `src/router/index.ts` defines client routes, not server endpoints. `/admin` is a redirect convenience, not authentication; management UI is mounted in the Contentful iframe and relies on Contentful installation/editor permissions (`docs/adr/0006-contentful-as-transitional-write-store.md`).
 - GitHub Actions tests and builds on pushes/PRs targeting `main`; deploys only pushes to `main` (`.github/workflows/deploy.yml`).
 <!-- skill-state
-output_sha256: 07737dc65d1c4f6813c2f25b33611f5c52704b5e48371deb8bfe276c4f40a252
+output_sha256: 1725599ab7edd85aec0abc1b0c93cc7d5b40c2ba45a048d69529f4f1847cb41f
 -->
