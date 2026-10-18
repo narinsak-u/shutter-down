@@ -473,12 +473,21 @@ onUnmounted(() => {
       role="dialog"
       aria-modal="true"
       :data-photo-id="currentPhoto?.id"
-      class="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-black/70 p-2 md:p-8"
+      class="fixed inset-0 z-100 flex items-start justify-center overflow-y-auto
+        bg-black/70 p-2 md:items-center md:p-8"
       @click.self="close"
     >
       <button
+        class="fixed right-4 top-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        type="button"
+        aria-label="Close lightbox"
+        @click="close"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+      <button
         v-if="items.length > 1"
-        class="absolute hidden rounded-full lg:inline lg:left-1 top-1/2 z-20 -translate-y-1/2 cursor-pointer text-white p-2 transition-opacity duration-200 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:left-25"
+        class="absolute left-3 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:z-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:left-5"
         type="button"
         aria-label="Previous image"
         @click="prev"
@@ -487,7 +496,7 @@ onUnmounted(() => {
       </button>
       <button
         v-if="items.length > 1"
-        class="absolute hidden rounded-full lg:inline lg:right-1 top-1/2 z-20 -translate-y-1/2 cursor-pointer p-2 text-white transition-opacity duration-200 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:right-25"
+        class="absolute right-3 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:z-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:right-5"
         type="button"
         aria-label="Next image"
         @click="next"
@@ -495,11 +504,14 @@ onUnmounted(() => {
         <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
       </button>
       <div
-        class="relative flex min-h-[min(90vh,680px)] max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-sm bg-white shadow-2xl md:max-h-[calc(100vh-4rem)] md:min-h-0 md:flex-row"
+        class="relative my-auto flex min-h-[min(90vh,680px)] w-full max-w-6xl
+          flex-col rounded-sm bg-white shadow-2xl md:max-h-[calc(100vh-4rem)]
+          md:min-h-0 md:flex-row md:overflow-hidden"
         @click.stop
       >
         <section
-          class="flex min-h-[35vh] flex-1 items-center justify-center bg-black md:min-h-0 md:w-[70%] md:flex-none"
+          class="flex min-h-[45vh] flex-[1.5] items-center justify-center bg-black md:min-h-0 md:w-[70%] md:flex-none"
+          aria-label="Photo"
         >
           <img
             :src="currentSrc"
@@ -508,7 +520,10 @@ onUnmounted(() => {
           />
         </section>
 
-        <aside class="flex min-h-0 flex-1 flex-col bg-white md:w-[30%] md:flex-none">
+        <aside
+          class="flex min-h-0 flex-1 flex-col bg-white md:w-[30%] md:flex-none"
+          aria-label="Photo activity"
+        >
           <div class="flex min-h-0 flex-1 flex-col px-5 py-4">
             <div class="shrink-0 border-b border-gray-200 pb-4 text-sm">
               <p class="text-xs text-secondary font-semibold">
@@ -520,7 +535,7 @@ onUnmounted(() => {
             </div>
 
             <div
-              class="flex min-h-0 flex-1 flex-col overflow-y-auto py-4"
+              class="flex min-h-0 flex-1 flex-col overflow-visible py-4 md:overflow-y-auto"
               role="region"
               aria-label="Comments"
               aria-live="polite"

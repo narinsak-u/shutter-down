@@ -148,33 +148,42 @@ describe("Lightbox", () => {
     expect(wrapper.text()).not.toContain("Bookmark");
   });
 
-  it("bounds the mobile interaction card to the viewport while retaining desktop sizing", () => {
+  it('presents the photo as the primary region with identifiable close and navigation controls', async () => {
+    const wrapper = mount(LightboxComponent, {
+      props: { items, modelValue: true, index: 0 },
+    });
+    const dialog = wrapper.find('[role="dialog"]');
+    const photo = dialog.find('[aria-label="Photo"]');
+    const activity = dialog.find('[aria-label="Photo activity"]');
+
+    expect(photo.exists()).toBe(true);
+    expect(activity.exists()).toBe(true);
+    expect(
+      (photo.element.compareDocumentPosition(activity.element) & Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0,
+    ).toBe(true);
+    expect(dialog.find('[aria-label="Close lightbox"]').exists()).toBe(true);
+    expect(dialog.find('[aria-label="Previous image"]').exists()).toBe(true);
+    expect(dialog.find('[aria-label="Next image"]').exists()).toBe(true);
+  });
+
+  it('closes with the identifiable close control', async () => {
     const wrapper = mount(LightboxComponent, {
       props: { items: single, modelValue: true, index: 0 },
     });
-
-    const card = wrapper.find('[role="dialog"] > div');
-    expect(card.classes()).toContain("max-h-[calc(100dvh-1rem)]");
-    expect(card.classes()).toContain("md:max-h-[calc(100vh-4rem)]");
+    await wrapper.find('[aria-label="Close lightbox"]').trigger('click');
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe(false);
   });
-  it("retains fullscreen backdrop semantics on the open dialog root", () => {
+
+  it('supports keyboard navigation between Photos', () => {
     const wrapper = mount(LightboxComponent, {
-      props: { items: single, modelValue: true, index: 0 },
+      props: { items, modelValue: true, index: 0 },
     });
 
-    const root = wrapper.find('[role="dialog"]');
-    expect(root.classes()).toEqual(
-      expect.arrayContaining([
-        "fixed",
-        "inset-0",
-        "z-100",
-        "overflow-y-auto",
-        "bg-black/70",
-        "p-2",
-        "md:p-8",
-      ]),
-    );
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(wrapper.emitted('update:index')?.[0]?.[0]).toBe(1);
   });
+
 
   it("loads a fresh summary and photo metadata after navigation", async () => {
     const wrapper = await openLightbox({ items, index: 0 });

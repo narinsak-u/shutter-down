@@ -15,6 +15,13 @@ const openPhoto = (index: number) => {
   galleryStore.lightboxOpen = true;
 };
 
+function scrollCategoryNavigation(direction: -1 | 1, event: KeyboardEvent): void {
+  const navigation = event.currentTarget;
+  if (navigation instanceof HTMLElement) {
+    navigation.scrollLeft += direction * navigation.clientWidth;
+  }
+}
+
 /** Reference to the sentinel element at the end of the gallery—used to trigger infinite scroll. */
 const sentinelRef = ref<HTMLElement | null>(null);
 const MASONRY_GAP = 24;
@@ -201,23 +208,34 @@ watch(
 
 <template>
   <main
-    class="pt-20 pb-section-gap px-container-margin-mobile md:px-container-margin-desktop md:mx-10 min-h-screen"
+    class="mx-auto min-h-screen w-full max-w-[1600px] px-4 pt-20 pb-section-gap sm:px-6 lg:px-10 2xl:px-16"
   >
-    <section class="mb-16 md:mb-20 max-w-2xl">
-      <h2 class="text-headline-xl font-pacifico text-primary mb-6">Eyes up, shutter down. 📷</h2>
+    <section class="mb-16 md:mb-20 max-w-4xl">
+      <h1 class="mb-6 text-headline-xl font-pacifico text-primary">
+        Eyes up, shutter down. <span aria-hidden="true">📷</span>
+      </h1>
       <p class="text-body-md font-body-md text-secondary max-w-xl">
         Walk around, frame the shot, and immediately move on to the next thing without overthinking
         it.
       </p>
     </section>
 
-    <nav class="flex items-center gap-8 mb-12 overflow-x-auto no-scrollbar">
+    <nav
+      aria-label="Photo categories"
+      tabindex="0"
+      class="mb-12 flex items-center gap-8 overflow-x-auto
+        focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      @keydown.left.prevent="scrollCategoryNavigation(-1, $event)"
+      @keydown.right.prevent="scrollCategoryNavigation(1, $event)"
+    >
       <button
         v-for="category in categories"
         :key="category"
+        type="button"
+        :aria-pressed="galleryStore.activeFilter === category"
         @click="galleryStore.setFilter(category)"
         :class="[
-          'text-label-sm cursor-pointer font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1',
+          'text-label-sm cursor-pointer font-label-sm whitespace-nowrap transition-all duration-200 ease-out pb-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary',
           galleryStore.activeFilter === category
             ? 'text-primary border-b-2 border-primary'
             : 'text-secondary hover:text-primary',
@@ -229,31 +247,39 @@ watch(
 
     <p
       v-if="galleryStore.loading && galleryStore.photos.length === 0"
-      class="text-center py-20 text-body-lg font-body-lg text-secondary"
+      class="my-16 rounded-md border border-outline-variant bg-surface-bright px-6 py-12 text-center text-body-md font-body-md text-secondary"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
-      Loading...
+      Loading photos…
     </p>
 
     <div
       v-else-if="galleryStore.error && galleryStore.photos.length === 0"
-      class="text-center py-20"
+      class="my-16 rounded-md border border-outline-variant bg-surface-bright px-6 py-12 text-center"
+      role="alert"
     >
-      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+      <p class="text-body-md font-body-md text-primary">{{ galleryStore.error }}</p>
       <button
-        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        class="mt-4 text-label-sm font-label-sm text-primary underline underline-offset-4 cursor-pointer"
         @click="galleryStore.fetchPhotos(true)"
       >
-        Retry
+        Try again
       </button>
     </div>
 
-    <div v-if="galleryStore.error && galleryStore.photos.length > 0" class="text-center py-8">
-      <p class="text-body-lg font-body-lg text-red-500 mb-4">{{ galleryStore.error }}</p>
+    <div
+      v-if="galleryStore.error && galleryStore.photos.length > 0"
+      class="my-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-md border border-outline-variant px-4 py-3 text-center"
+      role="alert"
+    >
+      <p class="text-label-md font-label-md text-primary">{{ galleryStore.error }}</p>
       <button
-        class="text-label-sm font-label-sm text-primary underline cursor-pointer"
+        class="text-label-sm font-label-sm text-primary underline underline-offset-4 cursor-pointer"
         @click="galleryStore.fetchPhotos(true)"
       >
-        Retry
+        Try again
       </button>
     </div>
 
@@ -270,6 +296,7 @@ watch(
         <GalleryItem
           v-for="(item, index) in galleryStore.filteredPhotos"
           :key="item.id"
+          :data-photo-id="item.id"
           :src="item.src"
           :thumbSrc="item.thumbSrc"
           :alt="item.alt"
@@ -278,24 +305,31 @@ watch(
           :imageWidth="item.imageWidth"
           :imageHeight="item.imageHeight"
           :prioritize="index < initiallyVisiblePhotoCount"
-          :data-photo-id="item.id"
           @click="openPhoto(index)"
         />
       </TransitionGroup>
 
-      <div v-if="galleryStore.filteredPhotos.length === 0" class="text-center py-20">
-        <p class="text-sm font-semibold text-secondary">No time to shoot.</p>
+      <div
+        v-if="galleryStore.filteredPhotos.length === 0"
+        class="my-16 rounded-md border border-outline-variant bg-surface-bright px-6 py-12 text-center"
+        role="status"
+      >
+        <p class="text-body-md font-body-md text-secondary">No photos in this category.</p>
       </div>
 
       <div ref="sentinelRef" v-if="galleryStore.hasMore" class="h-px" />
 
       <p
         v-if="galleryStore.loadingMore"
-        class="text-center py-8 text-body-lg font-body-lg text-secondary"
+        class="py-8 text-center text-label-md font-label-md text-secondary"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
       >
-        Loading more...
+        Loading more photos…
       </p>
     </template>
+
   </main>
 
   <Lightbox

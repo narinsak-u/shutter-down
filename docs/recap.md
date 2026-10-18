@@ -155,21 +155,101 @@
 
 </details>
 
+## 2026-10-18 — Project documentation and integration baseline
+
+- **Category:** documentation
+- **Status:** Completed
+- **What / why:** Added the overview, backlog, and initial recap artifacts that record project context and work intake.
+- **Impact:** Makes repository guidance and work tracking available; no runtime impact is established.
+
+<details>
+<summary>Technical details and commit evidence</summary>
+
+- **Important files:** `docs/overview.md`, `docs/backlog.md`, `docs/recap.md`
+- **Commits:** `19427d2f0284703ecd97fb3dceafb8e9e856f04f` — added documentation set.
+- **Verification:** The commits add or update tests and evidence; this recap invocation did not run project tests or build.
+
+</details>
+
+## 2026-10-18 — Cache-first gallery, stale refresh, and masonry stability
+
+- **Category:** performance
+- **Status:** Completed
+- **What / why:** Changed gallery entry to show cached photos first, preserve existing photos after refresh failure, and stabilize batched masonry layout; included follow-up fixes and integration merges.
+- **Impact:** Keeps existing gallery content available during refresh and reduces layout movement; measured impact is not established here.
+
+<details>
+<summary>Technical details and commit evidence</summary>
+
+- **Important files:** `src/components/Gallery.vue`, `src/components/GalleryItem.vue`, `src/stores/gallery.ts`, `src/services/contentful.ts`, `src/types/gallery.ts`, `src/__tests__/Gallery.spec.ts`, `src/__tests__/gallery-store.spec.ts`, `src/__tests__/GalleryItem.spec.ts`
+- **Commits:** `b711712ece017d6c8a177762957c0523ab3edef3` — cache-first entry; `b4d2e026f298375297a9617f2864df7db2529fc4` — restore cache lookups; `043f0469934854bfd93fa08e390b3e77609a555e` — cache merge; `39abfbfee4bf23b2789d1a7aacaf005bb6d67603` — stable batched masonry; `613f97c52642ba5b6613ef5e77978ef58e9fd566` — retain image-load tracking; `75751d9d774214618eee4d75a27f3e17fcb93770` — masonry merge; `37791bf80e8556111b6e93800d4be67d542ca20a` — hide new photos until layout; `2e00b74bf6a1c2aa1cb9529b41442070d69dc0ee` — preserve stale gallery on refresh; `995e3d1a1bb5dd9199eddc6b0a587f8396240830` — merge gallery refresh fixes; `6adf9b08f99ffcb797e364e5cac69fa8c88cfdc5` — resolve final gallery review findings; `e884e4d061d366d677624f22c3e0b203626afac8` — merge final gallery review.
+- **Verification:** The commits add or update tests and evidence; this recap invocation did not run project tests or build.
+
+</details>
+
+## 2026-10-18 — Recoverable Contentful photo publication
+
+- **Category:** fixes
+- **Status:** Completed
+- **What / why:** Added handling for publication failures and ambiguous remote outcomes in the photo uploader, including safe recovery paths and focused regression coverage.
+- **Impact:** Prevents confirmed remote publication from being treated as a simple failed write and avoids destructive cleanup when remote state is uncertain.
+
+<details>
+<summary>Technical details and commit evidence</summary>
+
+- **Important files:** `src/components/ContentfulAdmin.vue`, `src/__tests__/ContentfulAdmin.spec.ts`
+- **Commits:** `132f5f245950ccd6ba7adc76ddf42640e1f9528f` — recover publication failures; `3ed1469a17e4f37db5dd486b0fc49c11f1ceaa5e` — cover upload/update compensation; `0b2a6e7eff0f796f097e3c9fd1cf8b84c9d615ec` — preserve assets after ambiguous failure; `addb6a1a981fc4e29f79b70950c790cc1f323fd6` — restore replacement rollback declarations; `0a2b06dd4b1c5e7dc08bf85ef7c5876ede12f618` — admin recovery merge; `17386a054213f435aad6d0c8bd884d4b9bbfa365` — fix ambiguous draft cleanup; `2f24337429fe9ae4fcf9bb3ca2a1a62f6aacf9d6` — merge draft recovery fix; `9f845b3b4ebe35a799d1b3ab811f6b83bc7b43d6` — recover ambiguous Contentful operations; `9f386711e5ac7c9b1cedd20f8ad48837df1b50c7` — merge recovery fix.
+- **Verification:** The commits add or update tests and evidence; this recap invocation did not run project tests or build.
+
+</details>
+
+## 2026-10-18 — Paginated comments and recoverable visitor writes
+
+- **Category:** performance
+- **Status:** Completed
+- **What / why:** Separated comment-page reads from like-summary queries and added compensation/recovery for failed visitor-interaction publication, with follow-up integration fixes.
+- **Impact:** Comment pagination avoids repeating like queries per page; remote writes now account for confirmed, draft, and uncertain outcomes.
+
+<details>
+<summary>Technical details and commit evidence</summary>
+
+- **Important files:** `src/services/comment-pages.ts`, `src/services/interactions.ts`, `src/components/Lightbox.vue`, `src/__tests__/interactions-service.spec.ts`, `src/__tests__/Lightbox.spec.ts`
+- **Commits:** `517d75d943cbc5dc4fc2f0d38f3c3240c37256c9` — fetch comment pages without like queries; `71b10a76336a227194c5858a16bbaf2ec92da0fa` — comments integration merge; `6944868f55167bd0c8ae847f11bf6948a1876832` — compensate failed visitor publishes; `b4448511c0a2f787fd7060cdf32a9d61c5a0024f` — interaction merge; `596fffe5cdc2d846f08ef53992162a37c453d533` — restore API URL constants; `3dbb5c233814e3ad84415b5d344dd987d6568446` — merge API constant fix; `0f5d3863ba35dfd8df4eef21d26ed1532965c3f0` — import paginated loader; `1626c70412a5723ef59056550c3597bb746d8138` — merge load-more fix.
+- **Verification:** The commits add or update tests and evidence; this recap invocation did not run project tests or build.
+
+</details>
+
+## 2026-10-18 — Integration verification and published evidence
+
+- **Category:** testing
+- **Status:** Completed
+- **What / why:** Integrated gallery, comment, and Contentful recovery branches; added cross-flow verification and recorded the final gallery responsiveness evidence.
+- **Impact:** Records observed behavior and known limitations for the integrated changes; performance measurements are single-run evidence, not a general performance guarantee.
+
+<details>
+<summary>Technical details and commit evidence</summary>
+
+- **Important files:** `docs/gallery-responsiveness-evidence.md`, `docs/overview.md`, `src/__tests__/ContentfulAdmin.spec.ts`, `src/__tests__/Gallery.spec.ts`, `src/__tests__/Lightbox.spec.ts`, `src/__tests__/gallery-store.spec.ts`, `src/__tests__/interactions-service.spec.ts`
+- **Commits:** `31772d96a3214592a34a4efee0fc3bd9ff41c8af` — integrate gallery work into admin branch; `5ae60d2516df8c331cd15cdbab2bc615ffca3ae5` — compatible deferred-promise test helper; `bebfe852b62cf30ce182d9e7ed86a7421d5cf39d` — verify integration flows and recovery; `8ba2f44bd5a60aaa5d9a760fe9872111d4f58e6f` — address review findings; `34c2be19d9b050f5255b49e6d2b08f4242b21f07` — merge review fixes; `603bae85156be486d20eba7cf18c7a5e849986a7` — record responsiveness evidence; `48428bc773fada8e6a7bd033af79f2a5bdf584b3` — update final evidence; `2040df1898fd1a236288ae32996744edeea19604` — clarify matched CLS measurements; `c8efc2e081375bfb5bdec8b8cfe5aa9c8c0de6ac` — merge PR #12 into `dev`.
+- **Verification:** The commits add or update tests and evidence; this recap invocation did not run project tests or build.
+
+</details>
+
 ## Current Point
 
-- **HEAD:** `d47f8fc0031a284fa0c75b57ea0b21fa9ecb4f6b` on `dev`
-- **Recap checkpoint:** `d47f8fc0031a284fa0c75b57ea0b21fa9ecb4f6b`
+- **HEAD:** `c8efc2e081375bfb5bdec8b8cfe5aa9c8c0de6ac` on `dev`
+- **Recap checkpoint:** `c8efc2e081375bfb5bdec8b8cfe5aa9c8c0de6ac`
 - **Pending committed history:** None
-- **Committed work:** Initial coverage from `7c017800cefcf6b90a5c5c78fa1b56bd1f10764e` through HEAD; see the dated entries above. No older reachable history is excluded.
-- **Uncommitted work:** Staged: none. Unstaged: none. Untracked: `docs/overview.md` (separate overview output created before this recap task); `docs/recap.md` is this recap output and is not included in the committed history.
-- **Verification:** Git history and changed-file summaries inspected for all 85 commits. No project tests or build were run for this recap.
+- **Committed work:** Initial coverage remains as recorded in the earlier entries, with commits after the previous checkpoint through HEAD represented by the new dated entries above. Initial history coverage excludes older reachable history as previously recorded in Scope.
+- **Uncommitted work:** Staged: none. Unstaged: `docs/recap.md` (this recap output only). Untracked: none.
+- **Verification:** Git history and changed-file summaries inspected for all 38 commits since the previous checkpoint. Project tests/build were not run for this recap.
 - **Next safe point:** None identified; future recap updates should start from this checkpoint.
 
 <!-- recap-state
 branch: dev
-last_commit: d47f8fc0031a284fa0c75b57ea0b21fa9ecb4f6b
+last_commit: c8efc2e081375bfb5bdec8b8cfe5aa9c8c0de6ac
 last_updated: 2026-10-18
-history_head: d47f8fc0031a284fa0c75b57ea0b21fa9ecb4f6b
+history_head: c8efc2e081375bfb5bdec8b8cfe5aa9c8c0de6ac
 pending_commits: none
-output_sha256: 5b66195df4cc07c9b3aad5fac3d086a78a82604feea99cf181a11173c00a2c69
+output_sha256: 9388c5dc358f70073444e36344a80189640f5b99c6b34bc1e9e3fb8ea0e0708d
 -->

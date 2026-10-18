@@ -49,6 +49,12 @@ colors:
   on-background: '#1a1c1c'
   surface-variant: '#e2e2e2'
 typography:
+  brand-heading:
+    fontFamily: Pacifico
+    fontSize: 50px
+    fontWeight: '400'
+    lineHeight: '1.5'
+
   headline-xl:
     fontFamily: Geist
     fontSize: 40px
@@ -121,7 +127,7 @@ The color strategy is strictly monochromatic to prevent UI elements from competi
 
 ## Typography
 
-This design system utilizes **Geist** for its technical precision and elegant, monolinear construction. The typography is treated as a structural element rather than a decorative one.
+This design system uses **Geist** for interface and body text, with its technical precision and elegant, monolinear construction. **Pacifico** is reserved for the gallery's brand heading, restoring the original wordmark without adding decoration to photo metadata or controls.
 
 - **Scale:** Use tight tracking for headlines to create a "locked-in" editorial look.
 - **Hierarchy:** High contrast in weight (SemiBold vs. Regular) is preferred over color changes to denote hierarchy.
@@ -166,6 +172,13 @@ To maintain a sophisticated and professional look, this design system uses a **S
 
 ### Navigation
 - Top-aligned with high horizontal padding. Use `label-sm` for nav links with a persistent underline for the active state.
+- On narrow screens, category filters scroll horizontally only when they overflow. Do not suppress the native scroll indicator; keep the navigation keyboard-focusable.
+
+### Lightbox
+
+- On narrow screens, let the full photo and activity content scroll vertically in the overlay
+  while keeping the close control visible. On larger screens, keep the panel within the
+  viewport and let comments scroll within the activity panel.
 
 ### Transitions
 - All interactive states (hover, focus) must use a 200ms "ease-out" transition. Gallery filtering should use a simple opacity fade (300ms) rather than complex sliding animations.

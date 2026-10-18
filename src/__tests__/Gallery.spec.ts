@@ -81,6 +81,76 @@ afterEach(() => {
 })
 
 describe('Gallery', () => {
+  it('presents a clear page heading and exposes the selected category', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({
+      photos: [photo('nature'), { ...photo('building'), category: 'Architecture' }],
+      total: 2,
+    })
+    wrapper = mount(Gallery)
+    await flushPromises()
+
+    expect(wrapper.findAll('h1')).toHaveLength(1)
+    expect(wrapper.get('h1').find('[aria-hidden="true"]').exists()).toBe(true)
+    expect(wrapper.find('h2').exists()).toBe(false)
+
+    const natureFilter = wrapper.get('nav').findAll('button').find((button) => button.text() === 'Nature')
+    expect(natureFilter?.attributes('aria-pressed')).toBe('false')
+    await natureFilter?.trigger('click')
+
+    expect(natureFilter?.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('button[aria-pressed="true"]')).toHaveLength(1)
+    expect(wrapper.findAll('button[aria-pressed="false"]')).toHaveLength(3)
+    expect(wrapper.findAll('img')).toHaveLength(1)
+    expect(wrapper.get('img').attributes('alt')).toBe('Photo nature')
+  })
+
+  it('allows keyboard focus on the horizontally scrollable category navigation', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('nature')], total: 1 })
+    wrapper = mount(Gallery, { attachTo: document.body })
+    await flushPromises()
+
+    const categoryNavigation = wrapper.get('nav')
+    categoryNavigation.element.focus()
+
+    expect(document.activeElement).toBe(categoryNavigation.element)
+  })
+
+  it('scrolls overflowing categories with horizontal arrow keys', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('nature')], total: 1 })
+    wrapper = mount(Gallery, { attachTo: document.body })
+    await flushPromises()
+
+    const categoryNavigation = wrapper.get('nav')
+    Object.defineProperties(categoryNavigation.element, {
+      clientWidth: { configurable: true, value: 100 },
+      scrollWidth: { configurable: true, value: 250 },
+    })
+
+    await categoryNavigation.trigger('keydown', { key: 'ArrowRight' })
+    expect(categoryNavigation.element.scrollLeft).toBe(100)
+
+    await categoryNavigation.trigger('keydown', { key: 'ArrowLeft' })
+    expect(categoryNavigation.element.scrollLeft).toBe(0)
+  })
+
+  it('opens the focused Photo with keyboard activation in the lightbox', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({
+      photos: [photo('first'), { ...photo('second'), category: 'Architecture' }],
+      total: 2,
+    })
+    wrapper = mount(Gallery)
+    await flushPromises()
+
+    const photoControl = wrapper.get('button[aria-label="Photo second"]')
+    expect(photoControl.element.tagName).toBe('BUTTON')
+    expect(photoControl.attributes('type')).toBe('button')
+    await photoControl.trigger('keydown.enter')
+
+    const galleryStore = useGalleryStore()
+    expect(galleryStore.lightboxOpen).toBe(true)
+    expect(galleryStore.lightboxIndex).toBe(1)
+  })
+
   it('assigns every card width before reading heights and positions cards by shortest column', async () => {
     vi.mocked(fetchPhotos).mockResolvedValueOnce({
       photos: [photo('one'), photo('two'), photo('three'), photo('four'), photo('five')],
@@ -177,8 +247,8 @@ describe('Gallery', () => {
 
     expect(wrapper.find('[data-photo-id="stale"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Refresh failed')
-    const retry = wrapper.findAll('button').find((button) => button.text() === 'Retry')
-    expect(retry?.text()).toBe('Retry')
+    const retry = wrapper.findAll('button').find((button) => button.text() === 'Try again')
+    expect(retry?.text()).toBe('Try again')
 
     vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('fresh')], total: 1 })
     await retry?.trigger('click')
@@ -187,19 +257,48 @@ describe('Gallery', () => {
     expect(wrapper.find('[data-photo-id="fresh"]').exists()).toBe(true)
   })
 
-  it('shows Loading and a full-screen retryable error when no cached Photos exist', async () => {
+  it('shows distinct initial and loading-more feedback', async () => {
+    const nextPage = deferred<{ photos: Photo[]; total: number }>()
+    vi.mocked(fetchPhotos)
+      .mockResolvedValueOnce({ photos: [photo('one')], total: 2 })
+      .mockReturnValueOnce(nextPage.promise)
+
+    wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
+    await flushPromises()
+    const loadingMore = useGalleryStore().loadMore()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Loading more photos…')
+    expect(wrapper.text()).not.toContain('Loading photos…')
+
+    nextPage.resolve({ photos: [photo('two')], total: 2 })
+    await loadingMore
+    await flushPromises()
+  })
+
+  it('shows a clear empty-category message when no Photos match', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('one')], total: 1 })
+    wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
+    await flushPromises()
+    await useGalleryStore().setFilter('Architecture')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('No photos in this category.')
+  })
+
+  it('shows concise initial loading and a retryable error', async () => {
     const request = deferred<{ photos: Photo[]; total: number }>()
-    vi.mocked(fetchPhotos).mockReturnValue(request.promise)
+    vi.mocked(fetchPhotos).mockReturnValueOnce(request.promise)
 
     wrapper = mount(Gallery)
     await nextTick()
-    expect(wrapper.text()).toContain('Loading...')
+    expect(wrapper.text()).toContain('Loading photos…')
 
-    request.reject(new Error('Initial load failed'))
+    request.reject(new Error('Unable to load photos.'))
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Initial load failed')
-    expect(wrapper.findAll('button').find((button) => button.text() === 'Retry')?.text()).toBe('Retry')
-    expect(wrapper.find('#gallery').exists()).toBe(false)
+    expect(
+      wrapper.findAll('button').find((button) => button.text() === 'Try again')?.exists(),
+    ).toBe(true)
   })
 })

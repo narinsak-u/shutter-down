@@ -147,7 +147,7 @@
 }
 
 @utility font-pacifico {
-  font-family: "Pacifico", serif;
+  font-family: "Pacifico", cursive;
 }
 
 @font-face {
@@ -205,14 +205,13 @@ body {
     transition: none;
   }
 
-  main {
-    animation: none;
-  }
 }
 
 /* Gallery TransitionGroup — filter changes */
 .gallery-leave-active {
-  transition: all 0.4s ease-out;
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.4s ease-out;
 }
 
 .gallery-leave-to {
@@ -243,6 +242,19 @@ body {
   transform: translateY(24px);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-enter-active,
+  .lightbox-leave-active {
+    transition: none;
+  }
+
+  .lightbox-enter-from,
+  .lightbox-leave-to {
+    transform: none;
+  }
+}
+
+
 .image-zoom {
   transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -250,14 +262,16 @@ body {
 .group:hover .image-zoom {
   transform: scale(1.02);
 }
+@media (prefers-reduced-motion: reduce) {
+  .gallery-leave-active,
+  .image-zoom {
+    transition: none;
+  }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+  .gallery-leave-to,
+  .group:hover .image-zoom {
+    transform: none;
+  }
 }
 
 main {
@@ -270,5 +284,11 @@ main {
   }
   to {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main {
+    animation: none;
   }
 }
