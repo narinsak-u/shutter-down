@@ -207,13 +207,35 @@ function removeFile(): void {
   fileError.value = "";
 }
 
-async function cleanupAsset(assetId: string): Promise<void> {
+async function cleanupAsset(assetId: string): Promise<boolean> {
   try {
     const current = await props.sdk.cma.asset.get({ assetId });
     if (current.sys.publishedVersion !== undefined) await props.sdk.cma.asset.unpublish({ assetId }, current);
     await props.sdk.cma.asset.delete({ assetId });
+    return true;
   } catch {
     // Best-effort cleanup; Contentful owns the asset if cleanup is unavailable.
+    return false;
+  }
+}
+
+async function deleteDraftEntry(entryId: string): Promise<boolean> {
+  try {
+    const current = await props.sdk.cma.entry.get({ entryId }) as unknown as Entry;
+    if (current.sys.publishedVersion !== undefined) return false;
+    await props.sdk.cma.entry.delete({ entryId }, current);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function restoreEntry(entry: Entry): Promise<boolean> {
+  try {
+    await props.sdk.cma.entry.update({ entryId: entry.sys.id }, entry);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -353,10 +375,11 @@ async function submitUpload(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
+  let draftEntry: Entry | undefined;
   try {
     newAsset = await createPublishedAsset(selectedFile.value, locale);
     phase.value = "Publishing photo...";
-    const entry = await props.sdk.cma.entry.create({ contentTypeId: "gallery" }, {
+    draftEntry = await props.sdk.cma.entry.create({ contentTypeId: "gallery" }, {
       fields: {
         location: { [locale]: form.location },
         date: { [locale]: form.date },
@@ -365,8 +388,8 @@ async function submitUpload(): Promise<void> {
         alt: { [locale]: altDocument(form.alt) },
         src: { [locale]: { sys: { type: "Link", linkType: "Asset", id: newAsset.sys.id } } },
       },
-    });
-    await props.sdk.cma.entry.publish({ entryId: entry.sys.id }, entry);
+    }) as unknown as Entry;
+    await props.sdk.cma.entry.publish({ entryId: draftEntry.sys.id }, draftEntry);
     progress.value = 100;
     resetForm();
     removeFile();
@@ -374,7 +397,8 @@ async function submitUpload(): Promise<void> {
     props.sdk.notifier.success("Photo published");
   } catch (caught) {
     error.value = getErrorMessage(caught, "Upload failed");
-    if (newAsset) await cleanupAsset(newAsset.sys.id);
+    const draftRemoved = !draftEntry || await deleteDraftEntry(draftEntry.sys.id);
+    if (newAsset && draftRemoved) await cleanupAsset(newAsset.sys.id);
   } finally {
     uploading.value = false;
     phase.value = "";
@@ -402,8 +426,11 @@ async function submitEdit(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
+  let currentEntry: Entry | undefined;
+  let entryUpdateAttempted = false;
+  let updatePublished = false;
   try {
-    const currentEntry = await props.sdk.cma.entry.get({ entryId: photo.id }) as unknown as Entry;
+    currentEntry = await props.sdk.cma.entry.get({ entryId: photo.id }) as unknown as Entry;
     const oldAssetId = getSourceAssetId(currentEntry, locale);
     const fields = { ...(currentEntry.fields as Record<string, unknown>) };
     setLocalizedField(fields, "location", locale, form.location);
@@ -421,6 +448,7 @@ async function submitEdit(): Promise<void> {
 
     progress.value = 80;
     phase.value = "Publishing changes...";
+    entryUpdateAttempted = true;
     const updatedEntry = await props.sdk.cma.entry.update(
       { entryId: photo.id },
       { ...currentEntry, fields },
@@ -429,6 +457,7 @@ async function submitEdit(): Promise<void> {
       { entryId: photo.id },
       updatedEntry,
     );
+    updatePublished = true;
     if (newAsset && oldAssetId && oldAssetId !== newAsset.sys.id) {
       await cleanupAsset(oldAssetId);
     }
@@ -453,7 +482,8 @@ async function submitEdit(): Promise<void> {
     props.sdk.notifier.success("Photo saved");
   } catch (caught) {
     error.value = getErrorMessage(caught, "Could not save photo.");
-    if (newAsset) await cleanupAsset(newAsset.sys.id);
+    const restored = !entryUpdateAttempted || !currentEntry || await restoreEntry(currentEntry);
+    if (newAsset && restored && !updatePublished) await cleanupAsset(newAsset.sys.id);
   } finally {
     uploading.value = false;
     phase.value = "";
