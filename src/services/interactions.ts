@@ -4,6 +4,8 @@ import type {
   InteractionSummary,
 } from '@/types/interactions'
 import { fetchCommentPage, mapCommentPageItems } from '@/services/comment-pages'
+const DELIVERY_API = 'https://cdn.contentful.com'
+const MANAGEMENT_API = 'https://api.contentful.com'
  
 const DEFAULT_COMMENT_LIMIT = 5
 const MAX_COMMENT_LENGTH = 500
