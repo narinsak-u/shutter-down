@@ -201,6 +201,16 @@ body {
     transition: none;
   }
 
+  .gallery-leave-active,
+  .image-zoom {
+    transition: none;
+  }
+
+  .gallery-leave-to,
+  .group:hover .image-zoom {
+    transform: none;
+  }
+
   main {
     animation: none;
   }
