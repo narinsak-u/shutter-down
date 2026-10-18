@@ -203,8 +203,10 @@ watch(
   <main
     class="mx-auto min-h-screen w-full max-w-[1600px] px-4 pt-20 pb-section-gap sm:px-6 lg:px-10 2xl:px-16"
   >
-    <section class="mb-16 md:mb-20 max-w-2xl">
-      <h1 class="text-headline-xl font-headline-xl text-primary mb-6">Eyes up, shutter down.</h1>
+    <section class="mb-16 md:mb-20 max-w-4xl">
+      <h1 class="mb-6 text-headline-xl font-pacifico text-primary">
+        Eyes up, shutter down. <span aria-hidden="true">📷</span>
+      </h1>
       <p class="text-body-md font-body-md text-secondary max-w-xl">
         Walk around, frame the shot, and immediately move on to the next thing without overthinking
         it.

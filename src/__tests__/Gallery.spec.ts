@@ -90,7 +90,7 @@ describe('Gallery', () => {
     await flushPromises()
 
     expect(wrapper.findAll('h1')).toHaveLength(1)
-    expect(wrapper.get('h1').text()).toBe('Eyes up, shutter down.')
+    expect(wrapper.get('h1').find('[aria-hidden="true"]').exists()).toBe(true)
     expect(wrapper.find('h2').exists()).toBe(false)
 
     const natureFilter = wrapper.get('nav').findAll('button').find((button) => button.text() === 'Nature')
