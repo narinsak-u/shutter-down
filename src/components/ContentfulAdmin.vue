@@ -426,6 +426,8 @@ async function submitEdit(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
+  let currentEntry: Entry | undefined;
+  let entryUpdateAttempted = false;
   let publicationAttempted = false;
   let updatePublished = false;
   try {
@@ -480,6 +482,7 @@ async function submitEdit(): Promise<void> {
     removeFile();
     success.value = "Photo saved successfully.";
     props.sdk.notifier.success("Photo saved");
+  } catch (caught) {
     error.value = getErrorMessage(caught, "Could not save photo.");
     let publishedUsesNewAsset = false;
     let publicationStateKnown = !publicationAttempted;
