@@ -54,17 +54,21 @@ export const useGalleryStore = defineStore('gallery', () => {
       await fetchFromNetwork()
       return
     }
-
     const cached = getFresh<{ photos: Photo[]; total: number }>(CACHE_KEY, CACHE_TTL)
+
     if (cached) {
       photos.value = cached.photos
+      hasMore.value = cached.photos.length < cached.total
+      skip.value = cached.photos.length
       return
     }
-
     const stale = getStale<{ photos: Photo[]; total: number }>(CACHE_KEY)
+
     if (stale) {
       photos.value = stale.photos
-      fetchFromNetwork()
+      hasMore.value = stale.photos.length < stale.total
+      skip.value = stale.photos.length
+      void fetchFromNetwork()
       return
     }
 

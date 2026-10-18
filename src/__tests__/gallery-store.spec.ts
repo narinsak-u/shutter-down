@@ -109,26 +109,32 @@ describe('galleryStore', () => {
     expect(fetchPhotos).toHaveBeenCalledTimes(1)
   })
 
-  it('returns cached data from fresh cache without API call', async () => {
-    setCache('gallery-photos', { photos: mockPhotos, total: 1 })
+  it('returns cached data from fresh cache without API call and preserves pagination', async () => {
+    setCache('gallery-photos', { photos: mockPhotos, total: 10 })
     const store = useGalleryStore()
     await store.fetchPhotos()
     expect(store.photos).toEqual(mockPhotos)
+    expect(store.hasMore).toBe(true)
     expect(vi.mocked(fetchPhotos)).not.toHaveBeenCalled()
+    vi.mocked(fetchPhotos).mockResolvedValue({ photos: mockPage2, total: 10 })
+    await store.loadMore()
+    expect(vi.mocked(fetchPhotos)).toHaveBeenLastCalledWith(2, 9)
+    expect(store.photos).toEqual([...mockPhotos, ...mockPage2])
   })
 
-  it('fetches fresh data when the initial load is forced', async () => {
+  it('bypasses cache on forced refresh and exposes request failures', async () => {
     setCache('gallery-photos', { photos: mockPhotos, total: 1 })
-    vi.mocked(fetchPhotos).mockResolvedValue({ photos: mockPage2, total: 1 })
+    vi.mocked(fetchPhotos).mockRejectedValue(new Error('Network error'))
 
     const store = useGalleryStore()
     await store.fetchPhotos(true)
 
-    expect(store.photos).toEqual(mockPage2)
     expect(vi.mocked(fetchPhotos)).toHaveBeenCalledWith(0, 9)
+    expect(store.photos).toEqual([])
+    expect(store.error).toBe('Network error')
   })
 
-  it('shows stale cache then revalidates in background', async () => {
+  it('shows stale cache while revalidating, then replaces displayed data', async () => {
     const staleEntry = JSON.stringify({
       timestamp: Date.now() - 900_001,
       data: { photos: mockPhotos, total: 10 },
@@ -142,16 +148,22 @@ describe('galleryStore', () => {
     vi.mocked(fetchPhotos).mockReturnValue(deferred)
 
     const store = useGalleryStore()
-    store.fetchPhotos()
-    // flush microtasks so stale data is applied and background fetch begins
-    await Promise.resolve()
+    store.setFilter('square')
+    await store.fetchPhotos()
 
     expect(store.photos).toEqual(mockPhotos)
+    expect(store.filteredPhotos).toEqual(mockPhotos.filter((photo) => photo.category === 'square'))
+    expect(store.loading).toBe(true)
     expect(vi.mocked(fetchPhotos)).toHaveBeenCalledWith(0, 9)
 
-    // let background revalidation complete
-    resolveDeferred!({ photos: mockPage2, total: 2 })
+    resolveDeferred({ photos: mockPage2, total: 2 })
     await deferred
+    await Promise.resolve()
+
+    expect(store.photos).toEqual(mockPage2)
+    expect(store.filteredPhotos).toEqual(mockPage2.filter((photo) => photo.category === 'square'))
+    expect(store.loading).toBe(false)
+    expect(store.hasMore).toBe(false)
   })
 
   it('loadMore always calls the API and does not cache', async () => {

@@ -133,7 +133,7 @@ const setupScrollReveal = () => {
 
 /** Initializes gallery on component mount: fetches photos and sets up scroll-reveal animations. */
 onMounted(() => {
-  galleryStore.fetchPhotos(true);
+  galleryStore.fetchPhotos();
   window.addEventListener("resize", layoutMasonry);
   setupScrollReveal();
 });
