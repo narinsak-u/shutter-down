@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
 
 @theme {
   --color-surface: #ffffff;
@@ -146,9 +145,6 @@
   font-family: "Geist", sans-serif;
 }
 
-@utility font-pacifico {
-  font-family: "Pacifico", serif;
-}
 
 @font-face {
   font-family: "Geist";
@@ -212,7 +208,9 @@ body {
 
 /* Gallery TransitionGroup — filter changes */
 .gallery-leave-active {
-  transition: all 0.4s ease-out;
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.4s ease-out;
 }
 
 .gallery-leave-to {
@@ -261,6 +259,18 @@ body {
 
 .group:hover .image-zoom {
   transform: scale(1.02);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-leave-active,
+  .image-zoom {
+    transition: none;
+  }
+
+  .gallery-leave-to,
+  .group:hover .image-zoom {
+    transform: none;
+  }
 }
 
 .no-scrollbar {
