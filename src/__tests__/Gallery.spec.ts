@@ -25,6 +25,16 @@ const photo = (id: string): Photo => ({
   category: 'Nature',
 })
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
 const localStorageData = new Map<string, string>()
 let wrapper: VueWrapper | undefined
 let frameCallbacks: FrameRequestCallback[]
@@ -153,19 +163,19 @@ describe('Gallery', () => {
         data: { photos: [photo('stale')], total: 1 },
       }),
     )
-    const refresh = Promise.withResolvers<{ photos: Photo[]; total: number }>()
+    const refresh = deferred<{ photos: Photo[]; total: number }>()
     vi.mocked(fetchPhotos).mockReturnValue(refresh.promise)
 
     wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
     await nextTick()
 
-    expect(wrapper.get('[data-photo-id="stale"]').exists()).toBe(true)
+    expect(wrapper.find('[data-photo-id="stale"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Loading...')
 
     refresh.reject(new Error('Refresh failed'))
     await flushPromises()
 
-    expect(wrapper.get('[data-photo-id="stale"]').exists()).toBe(true)
+    expect(wrapper.find('[data-photo-id="stale"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Refresh failed')
     const retry = wrapper.findAll('button').find((button) => button.text() === 'Retry')
     expect(retry?.text()).toBe('Retry')
@@ -174,11 +184,11 @@ describe('Gallery', () => {
     await retry?.trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('[data-photo-id="fresh"]').exists()).toBe(true)
+    expect(wrapper.find('[data-photo-id="fresh"]').exists()).toBe(true)
   })
 
   it('shows Loading and a full-screen retryable error when no cached Photos exist', async () => {
-    const request = Promise.withResolvers<{ photos: Photo[]; total: number }>()
+    const request = deferred<{ photos: Photo[]; total: number }>()
     vi.mocked(fetchPhotos).mockReturnValue(request.promise)
 
     wrapper = mount(Gallery)

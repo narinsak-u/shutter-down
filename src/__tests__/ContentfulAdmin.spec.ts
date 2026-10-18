@@ -47,6 +47,10 @@ function sdkFor(overrides: Record<string, unknown> = {}) {
           : existingEntry),
         get: vi.fn().mockResolvedValue(existingEntry),
         create: vi.fn().mockResolvedValue({ ...entry('draft-1', 'new-asset'), sys: { id: 'draft-1', version: 1 } }),
+        createWithId: vi.fn().mockImplementation(async ({ entryId }) => ({
+          ...entry(entryId, 'new-asset'),
+          sys: { id: entryId, version: 1 },
+        })),
         publish: vi.fn().mockImplementation(async (_params, value) => { calls.push(`publish:${value.sys.id}`); return value }),
         update: vi.fn().mockImplementation(async (_params, value) => ({ ...value, sys: { ...value.sys, version: 3 } })),
         delete: vi.fn().mockImplementation(async ({ entryId }) => { calls.push(`delete-entry:${entryId}`) }),
@@ -77,6 +81,10 @@ async function enterRequiredFields(wrapper: VueWrapper, prefix: 'contentful-phot
 describe('Contentful Admin recovery', () => {
   it('removes a failed new Photo draft before deleting its unreferenced asset', async () => {
     const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.entry.createWithId).mockResolvedValueOnce({
+      ...entry('draft-1', 'new-asset'),
+      sys: { id: 'draft-1', version: 1 },
+    } as never)
     vi.mocked(setup.sdk.cma.entry.publish).mockRejectedValueOnce(new Error('publish failed'))
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     vi.mocked(setup.sdk.cma.entry.get).mockResolvedValueOnce({
@@ -201,15 +209,55 @@ describe('Contentful Admin recovery', () => {
     wrapper.unmount()
   })
 
-  it('cleans the published image when a new Photo draft cannot be created', async () => {
+  it('removes a draft found after entry creation rejects after its response is lost', async () => {
     const setup = sdkFor()
-    vi.mocked(setup.sdk.cma.entry.create).mockRejectedValueOnce(new Error('draft creation failed'))
+    vi.mocked(setup.sdk.cma.entry.createWithId).mockRejectedValueOnce(new Error('draft creation response lost'))
+    vi.mocked(setup.sdk.cma.entry.get).mockImplementation(async ({ entryId }) => ({
+      ...entry(entryId, 'new-asset'),
+      sys: { id: entryId, version: 1 },
+    } as never))
     const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
     await selectImage(wrapper)
     await enterRequiredFields(wrapper, 'contentful-photo')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
+    expect(setup.sdk.cma.entry.get).toHaveBeenCalledWith({ entryId: expect.any(String) })
+    const entryId = vi.mocked(setup.sdk.cma.entry.get).mock.calls[0]?.[0].entryId
+    expect(setup.sdk.cma.entry.delete).toHaveBeenCalledWith({ entryId })
+    expect(setup.calls.indexOf(`delete-entry:${entryId}`)).toBeLessThan(setup.calls.indexOf('delete:new-asset'))
+    expect(wrapper.get('[role="alert"]').text()).toContain('draft creation response lost')
+    wrapper.unmount()
+  })
+
+  it('retains the asset when remote draft inspection is uncertain', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.entry.createWithId).mockRejectedValueOnce(new Error('draft creation response lost'))
+    vi.mocked(setup.sdk.cma.entry.get).mockRejectedValueOnce(new Error('entry inspection failed'))
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'contentful-photo')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(setup.sdk.cma.entry.get).toHaveBeenCalledWith({ entryId: expect.any(String) })
+    expect(setup.sdk.cma.entry.delete).not.toHaveBeenCalled()
+    expect(setup.calls).not.toContain('delete:new-asset')
+    expect(wrapper.get('[role="alert"]').text()).toContain('retained')
+    wrapper.unmount()
+  })
+  it('cleans the image when entry creation is confirmed absent remotely', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.entry.createWithId).mockRejectedValueOnce(new Error('draft creation failed'))
+    vi.mocked(setup.sdk.cma.entry.get).mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }))
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'contentful-photo')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(setup.sdk.cma.entry.get).toHaveBeenCalledWith({ entryId: expect.any(String) })
+    expect(setup.sdk.cma.entry.delete).not.toHaveBeenCalled()
     expect(setup.calls).toContain('delete:new-asset')
     expect(wrapper.get('[role="alert"]').text()).toContain('draft creation failed')
     wrapper.unmount()
