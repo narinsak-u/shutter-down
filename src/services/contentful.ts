@@ -65,14 +65,30 @@ export async function fetchPhotos(skip = 0, limit = 9): Promise<FetchPhotosResul
   const photos = response.items.map((entry) => {
     const fields = entry.fields as Record<string, unknown>;
     const srcField = fields.src as
-      | { fields?: { file?: { url?: string } } }
+      | {
+          fields?: {
+            file?: {
+              url?: string;
+              details?: { image?: { width?: number; height?: number } };
+            };
+          };
+        }
       | undefined;
-    const imageUrl = srcField?.fields?.file?.url ?? "";
+    const file = srcField?.fields?.file;
+    const imageUrl = file?.url ?? "";
+    const imageWidth = file?.details?.image?.width;
+    const imageHeight = file?.details?.image?.height;
+    const dimensionsAvailable =
+      typeof imageWidth === "number" &&
+      imageWidth > 0 &&
+      typeof imageHeight === "number" &&
+      imageHeight > 0;
     const thumbSrc = imageUrl ? `https:${imageUrl}?w=600&fit=thumb&fm=webp` : "";
     const lightboxSrc = imageUrl ? `https:${imageUrl}?w=1600&fm=webp` : "";
 
     return {
       id: entry.sys.id,
+      ...(dimensionsAvailable ? { imageWidth, imageHeight } : {}),
       src: lightboxSrc,
       thumbSrc,
       alt: getAltText(fields.alt),
