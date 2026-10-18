@@ -236,13 +236,14 @@ describe('Gallery', () => {
 
     wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
     await flushPromises()
-    await useGalleryStore().loadMore()
+    const loadingMore = useGalleryStore().loadMore()
     await nextTick()
 
     expect(wrapper.text()).toContain('Loading more photos…')
     expect(wrapper.text()).not.toContain('Loading photos…')
 
     nextPage.resolve({ photos: [photo('two')], total: 2 })
+    await loadingMore
     await flushPromises()
   })
 

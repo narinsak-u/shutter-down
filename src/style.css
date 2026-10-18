@@ -201,19 +201,6 @@ body {
     transition: none;
   }
 
-  .gallery-leave-active,
-  .image-zoom {
-    transition: none;
-  }
-
-  .gallery-leave-to,
-  .group:hover .image-zoom {
-    transform: none;
-  }
-
-  main {
-    animation: none;
-  }
 }
 
 /* Gallery TransitionGroup — filter changes */
@@ -302,5 +289,11 @@ main {
   }
   to {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main {
+    animation: none;
   }
 }
