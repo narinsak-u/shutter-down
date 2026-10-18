@@ -15,6 +15,13 @@ const openPhoto = (index: number) => {
   galleryStore.lightboxOpen = true;
 };
 
+function scrollCategoryNavigation(direction: -1 | 1, event: KeyboardEvent): void {
+  const navigation = event.currentTarget;
+  if (navigation instanceof HTMLElement) {
+    navigation.scrollLeft += direction * navigation.clientWidth;
+  }
+}
+
 /** Reference to the sentinel element at the end of the gallery—used to trigger infinite scroll. */
 const sentinelRef = ref<HTMLElement | null>(null);
 const MASONRY_GAP = 24;
@@ -215,7 +222,11 @@ watch(
 
     <nav
       aria-label="Photo categories"
-      class="flex items-center gap-8 mb-12 overflow-x-auto no-scrollbar"
+      tabindex="0"
+      class="mb-12 flex items-center gap-8 overflow-x-auto
+        focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      @keydown.left.prevent="scrollCategoryNavigation(-1, $event)"
+      @keydown.right.prevent="scrollCategoryNavigation(1, $event)"
     >
       <button
         v-for="category in categories"

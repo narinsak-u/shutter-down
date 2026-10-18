@@ -104,6 +104,35 @@ describe('Gallery', () => {
     expect(wrapper.get('img').attributes('alt')).toBe('Photo nature')
   })
 
+  it('allows keyboard focus on the horizontally scrollable category navigation', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('nature')], total: 1 })
+    wrapper = mount(Gallery, { attachTo: document.body })
+    await flushPromises()
+
+    const categoryNavigation = wrapper.get('nav')
+    categoryNavigation.element.focus()
+
+    expect(document.activeElement).toBe(categoryNavigation.element)
+  })
+
+  it('scrolls overflowing categories with horizontal arrow keys', async () => {
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('nature')], total: 1 })
+    wrapper = mount(Gallery, { attachTo: document.body })
+    await flushPromises()
+
+    const categoryNavigation = wrapper.get('nav')
+    Object.defineProperties(categoryNavigation.element, {
+      clientWidth: { configurable: true, value: 100 },
+      scrollWidth: { configurable: true, value: 250 },
+    })
+
+    await categoryNavigation.trigger('keydown', { key: 'ArrowRight' })
+    expect(categoryNavigation.element.scrollLeft).toBe(100)
+
+    await categoryNavigation.trigger('keydown', { key: 'ArrowLeft' })
+    expect(categoryNavigation.element.scrollLeft).toBe(0)
+  })
+
   it('opens the focused Photo with keyboard activation in the lightbox', async () => {
     vi.mocked(fetchPhotos).mockResolvedValueOnce({
       photos: [photo('first'), { ...photo('second'), category: 'Architecture' }],

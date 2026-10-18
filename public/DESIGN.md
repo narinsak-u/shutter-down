@@ -172,6 +172,7 @@ To maintain a sophisticated and professional look, this design system uses a **S
 
 ### Navigation
 - Top-aligned with high horizontal padding. Use `label-sm` for nav links with a persistent underline for the active state.
+- On narrow screens, category filters scroll horizontally only when they overflow. Do not suppress the native scroll indicator; keep the navigation keyboard-focusable.
 
 ### Transitions
 - All interactive states (hover, focus) must use a 200ms "ease-out" transition. Gallery filtering should use a simple opacity fade (300ms) rather than complex sliding animations.
