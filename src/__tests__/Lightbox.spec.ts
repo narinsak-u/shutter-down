@@ -313,6 +313,44 @@ describe("Lightbox", () => {
     expect(wrapper.find('[aria-label="Like photo"]').text()).toContain("2 likes");
     expect(wrapper.find('[role="alert"]').text()).toContain("Like failed");
   });
+  it("restores a failed optimistic like and allows a successful retry", async () => {
+    vi.mocked(createLike)
+      .mockRejectedValueOnce(new Error("Publication failed"))
+      .mockResolvedValueOnce("like-retried");
+    const wrapper = await openLightbox();
+
+    await wrapper.find('[aria-label="Like photo"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[aria-label="Like photo"]').text()).toContain("2 likes");
+    expect(wrapper.find('[role="alert"]').text()).toContain("Publication failed");
+
+    await wrapper.find('[aria-label="Like photo"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[aria-label="Unlike photo"]').exists()).toBe(true);
+    expect(vi.mocked(createLike)).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores a failed comment draft and shows the comment after retry", async () => {
+    vi.mocked(createComment)
+      .mockRejectedValueOnce(new Error("Publication failed"))
+      .mockResolvedValueOnce(comment("comment-retried", "Retry this comment"));
+    const wrapper = await openLightbox();
+    const input = wrapper.find("textarea");
+    await input.setValue("Retry this comment");
+
+    await wrapper.find("form").trigger("submit");
+    await flushPromises();
+    expect(input.element.value).toBe("Retry this comment");
+    expect(wrapper.text()).not.toContain("Posting…");
+    expect(wrapper.find('[role="alert"]').text()).toContain("Publication failed");
+
+    await wrapper.find("form").trigger("submit");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Retry this comment");
+    expect(input.element.value).toBe("");
+    expect(vi.mocked(createComment)).toHaveBeenCalledTimes(2);
+  });
+
 
   it("optimistically posts a comment and replaces Posting state on success", async () => {
     const request = deferred<InteractionComment>();
