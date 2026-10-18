@@ -75,14 +75,14 @@ export async function fetchPhotos(skip = 0, limit = 9): Promise<FetchPhotosResul
         }
       | undefined;
     const file = srcField?.fields?.file;
-    const imageUrl = file?.url ?? "";
-    const imageWidth = file?.details?.image?.width;
-    const imageHeight = file?.details?.image?.height;
+    const imageUrl = file?.url ?? ''
+    const imageWidth = file?.details?.image?.width
+    const imageHeight = file?.details?.image?.height
     const dimensionsAvailable =
-      typeof imageWidth === "number" &&
+      typeof imageWidth === 'number' &&
       imageWidth > 0 &&
-      typeof imageHeight === "number" &&
-      imageHeight > 0;
+      typeof imageHeight === 'number' &&
+      imageHeight > 0
     const thumbSrc = imageUrl ? `https:${imageUrl}?w=600&fit=thumb&fm=webp` : "";
     const lightboxSrc = imageUrl ? `https:${imageUrl}?w=1600&fm=webp` : "";
 
