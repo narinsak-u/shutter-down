@@ -477,8 +477,16 @@ onUnmounted(() => {
       @click.self="close"
     >
       <button
+        class="absolute right-4 top-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white transition-opacity hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        type="button"
+        aria-label="Close lightbox"
+        @click="close"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+      <button
         v-if="items.length > 1"
-        class="absolute hidden rounded-full lg:inline lg:left-1 top-1/2 z-20 -translate-y-1/2 cursor-pointer text-white p-2 transition-opacity duration-200 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:left-25"
+        class="absolute left-3 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:z-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:left-5"
         type="button"
         aria-label="Previous image"
         @click="prev"
@@ -487,7 +495,7 @@ onUnmounted(() => {
       </button>
       <button
         v-if="items.length > 1"
-        class="absolute hidden rounded-full lg:inline lg:right-1 top-1/2 z-20 -translate-y-1/2 cursor-pointer p-2 text-white transition-opacity duration-200 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:right-25"
+        class="absolute right-3 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:z-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:right-5"
         type="button"
         aria-label="Next image"
         @click="next"
@@ -499,7 +507,8 @@ onUnmounted(() => {
         @click.stop
       >
         <section
-          class="flex min-h-[35vh] flex-1 items-center justify-center bg-black md:min-h-0 md:w-[70%] md:flex-none"
+          class="flex min-h-[45vh] flex-[1.5] items-center justify-center bg-black md:min-h-0 md:w-[70%] md:flex-none"
+          aria-label="Photo"
         >
           <img
             :src="currentSrc"
@@ -508,7 +517,10 @@ onUnmounted(() => {
           />
         </section>
 
-        <aside class="flex min-h-0 flex-1 flex-col bg-white md:w-[30%] md:flex-none">
+        <aside
+          class="flex min-h-0 flex-1 flex-col bg-white md:w-[30%] md:flex-none"
+          aria-label="Photo activity"
+        >
           <div class="flex min-h-0 flex-1 flex-col px-5 py-4">
             <div class="shrink-0 border-b border-gray-200 pb-4 text-sm">
               <p class="text-xs text-secondary font-semibold">
