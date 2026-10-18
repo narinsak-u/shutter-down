@@ -230,6 +230,21 @@ async function deleteDraftEntry(entryId: string): Promise<boolean> {
   }
 }
 
+function isEntryNotFound(caught: unknown): boolean {
+  return typeof caught === "object" && caught !== null && "status" in caught && caught.status === 404;
+}
+
+async function cleanupEntryAfterCreateFailure(entryId: string, assetId: string): Promise<boolean> {
+  let current: Entry;
+  try {
+    current = await props.sdk.cma.entry.get({ entryId }) as unknown as Entry;
+  } catch (caught) {
+    return isEntryNotFound(caught);
+  }
+  if (getSourceAssetId(current, props.sdk.locales.default) !== assetId) return false;
+  return deleteDraftEntry(entryId);
+}
+
 async function restoreEntry(entry: Entry, currentVersion?: Entry): Promise<boolean> {
   try {
     const restore = currentVersion
@@ -378,20 +393,25 @@ async function submitUpload(): Promise<void> {
   success.value = "";
   const locale = props.sdk.locales.default;
   let newAsset: Asset | undefined;
+  let attemptedEntryId: string | undefined;
   let draftEntry: Entry | undefined;
   try {
     newAsset = await createPublishedAsset(selectedFile.value, locale);
     phase.value = "Publishing photo...";
-    draftEntry = await props.sdk.cma.entry.create({ contentTypeId: "gallery" }, {
-      fields: {
-        location: { [locale]: form.location },
-        date: { [locale]: form.date },
-        type: { [locale]: getPhotoType(newAsset, locale) },
-        category: { [locale]: form.category },
-        alt: { [locale]: altDocument(form.alt) },
-        src: { [locale]: { sys: { type: "Link", linkType: "Asset", id: newAsset.sys.id } } },
+    attemptedEntryId = crypto.randomUUID();
+    draftEntry = await props.sdk.cma.entry.createWithId(
+      { contentTypeId: "gallery", entryId: attemptedEntryId },
+      {
+        fields: {
+          location: { [locale]: form.location },
+          date: { [locale]: form.date },
+          type: { [locale]: getPhotoType(newAsset, locale) },
+          category: { [locale]: form.category },
+          alt: { [locale]: altDocument(form.alt) },
+          src: { [locale]: { sys: { type: "Link", linkType: "Asset", id: newAsset.sys.id } } },
+        },
       },
-    }) as unknown as Entry;
+    ) as unknown as Entry;
     await props.sdk.cma.entry.publish({ entryId: draftEntry.sys.id }, draftEntry);
     progress.value = 100;
     resetForm();
@@ -400,8 +420,15 @@ async function submitUpload(): Promise<void> {
     props.sdk.notifier.success("Photo published");
   } catch (caught) {
     error.value = getErrorMessage(caught, "Upload failed");
-    const draftRemoved = !draftEntry || await deleteDraftEntry(draftEntry.sys.id);
+    const draftRemoved = draftEntry
+      ? await deleteDraftEntry(draftEntry.sys.id)
+      : attemptedEntryId
+        ? await cleanupEntryAfterCreateFailure(attemptedEntryId, newAsset?.sys.id ?? "")
+        : true;
     if (newAsset && draftRemoved) await cleanupAsset(newAsset.sys.id);
+    if (newAsset && !draftRemoved) {
+      error.value = `${error.value}. The image asset was retained because Contentful could not confirm that the incomplete draft was removed.`;
+    }
   } finally {
     uploading.value = false;
     phase.value = "";
