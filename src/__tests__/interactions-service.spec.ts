@@ -118,6 +118,35 @@ describe('interactions service', () => {
     expect(query.get('limit')).toBe('5')
     expect(query.has('fields.ipHash')).toBe(false)
   })
+  it('maps localized page fields from the configured Contentful locale', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({
+      items: [{
+        sys: { id: 'comment-localized' },
+        fields: {
+          photoId: { 'fr-FR': 'photo-fr', 'en-US': 'photo-1' },
+          ipHash: { 'fr-FR': 'empreinte', 'en-US': IP_HASH },
+          text: { 'fr-FR': 'bonjour', 'en-US': '  hello  ' },
+          createdAt: { 'fr-FR': '2026-01-01', 'en-US': '2026-08-29T12:00:00.000Z' },
+          status: { 'fr-FR': 'pending', 'en-US': 'visible' },
+        },
+      }],
+      total: 1,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchOlderComments('photo-1', 0)).resolves.toEqual({
+      comments: [{
+        id: 'comment-localized',
+        photoId: 'photo-1',
+        ipHash: IP_HASH,
+        text: 'hello',
+        createdAt: '2026-08-29T12:00:00.000Z',
+        status: 'visible',
+      }],
+      hasMoreComments: false,
+    })
+  })
+
 
   it('uses skip and limit for older comments', async () => {
     const fetchMock = vi.fn<typeof fetch>()
@@ -198,6 +227,42 @@ describe('interactions service', () => {
     expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PUT')
     expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-Contentful-Version')).toBe('1')
   })
+  it('uses submitted comment fallbacks and a Contentful system timestamp when fields are absent', async () => {
+    const systemTimestamp = '2026-08-30T12:00:00.000Z'
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'comment-1', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({
+        sys: { id: 'comment-1', version: 2, publishedVersion: 1, createdAt: systemTimestamp },
+      }))
+      .mockResolvedValueOnce(jsonResponse({ sys: { id: 'comment-2', version: 1 } }, 201))
+      .mockResolvedValueOnce(jsonResponse({
+        sys: { id: 'comment-2', version: 2, publishedVersion: 1 },
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createComment('photo-1', IP_HASH, '  hello  ')).resolves.toEqual({
+      id: 'comment-1',
+      photoId: 'photo-1',
+      ipHash: IP_HASH,
+      text: 'hello',
+      createdAt: systemTimestamp,
+      status: 'visible',
+    })
+    const systemTimestampPayload = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
+    expect(systemTimestampPayload.fields.createdAt['en-US']).not.toBe(systemTimestamp)
+
+    const fallbackComment = await createComment('photo-2', IP_HASH, '  fallback text  ')
+    const fallbackPayload = JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))
+    expect(fallbackComment).toEqual({
+      id: 'comment-2',
+      photoId: 'photo-2',
+      ipHash: IP_HASH,
+      text: 'fallback text',
+      createdAt: fallbackPayload.fields.createdAt['en-US'],
+      status: 'visible',
+    })
+  })
+
   it('compensates a confirmed failed like publication so a retry leaves only the retry published', async () => {
     const fetchMock = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ sys: { id: 'failed-like', version: 1 } }, 201))

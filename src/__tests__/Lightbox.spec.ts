@@ -396,24 +396,24 @@ describe("Lightbox", () => {
     expect(vi.mocked(createComment)).not.toHaveBeenCalled();
   });
 
-  it("loads older comments with five-item pagination", async () => {
-    const olderComments = [comment("6", "Older comment"), comment("7")];
-    const nextPage = deferred<{ comments: InteractionComment[]; hasMoreComments: boolean }>();
-    vi.mocked(fetchOlderComments).mockReturnValue(nextPage.promise);
-    const wrapper = await openLightbox();
-    const loadMore = wrapper.findAll("button").find((button) => button.text() === "Load more");
-    if (!loadMore) throw new Error("Load more button was not rendered.");
+  it('loads older comments with five-item pagination', async () => {
+    const olderComments = [comment('6', 'Older comment'), comment('7')]
+    const nextPage = deferred<{ comments: InteractionComment[]; hasMoreComments: boolean }>()
+    vi.mocked(fetchOlderComments).mockReturnValue(nextPage.promise)
+    const wrapper = await openLightbox()
+    const loadMore = wrapper.findAll('button').find((button) => button.text() === 'Load more')
+    if (!loadMore) throw new Error('Load more button was not rendered.')
 
-    await loadMore.trigger("click");
-    expect(loadMore.text()).toBe("Loading…");
-    expect(loadMore.attributes("disabled")).toBeDefined();
-    expect(vi.mocked(fetchOlderComments)).toHaveBeenLastCalledWith("single-photo", 5);
+    await loadMore.trigger('click')
+    expect(loadMore.text()).toBe('Loading…')
+    expect(loadMore.attributes('disabled')).toBeDefined()
+    expect(vi.mocked(fetchOlderComments)).toHaveBeenLastCalledWith('single-photo', 5)
 
-    nextPage.resolve({ comments: olderComments, hasMoreComments: false });
-    await flushPromises();
-    expect(wrapper.text()).toContain("Older comment");
-    expect(wrapper.findAll("button").some((button) => button.text() === "Load more")).toBe(false);
-  });
+    nextPage.resolve({ comments: olderComments, hasMoreComments: false })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Older comment')
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Load more')).toBe(false)
+  })
 
   it("shows identity and interaction errors accessibly when loading fails", async () => {
     vi.mocked(discoverPublicIp).mockRejectedValue(new Error("IP unavailable"));

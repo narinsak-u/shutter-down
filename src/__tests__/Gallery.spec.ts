@@ -25,6 +25,7 @@ const photo = (id: string): Photo => ({
   category: 'Nature',
 })
 
+const localStorageData = new Map<string, string>()
 let wrapper: VueWrapper | undefined
 let frameCallbacks: FrameRequestCallback[]
 let transitionStyle: HTMLStyleElement | undefined
@@ -39,12 +40,18 @@ class TestObserver {
 beforeEach(() => {
   originalInnerWidth = window.innerWidth
   setActivePinia(createPinia())
-  localStorage.clear()
+  localStorageData.clear()
   frameCallbacks = []
   transitionStyle = document.createElement('style')
   transitionStyle.textContent = '.gallery-enter-active { transition: opacity 1s; }'
   document.head.append(transitionStyle)
   vi.clearAllMocks()
+  vi.stubGlobal('localStorage', {
+    clear: () => localStorageData.clear(),
+    getItem: (key: string) => localStorageData.get(key) ?? null,
+    setItem: (key: string, value: string) => localStorageData.set(key, String(value)),
+    removeItem: (key: string) => localStorageData.delete(key),
+  })
   vi.stubGlobal('IntersectionObserver', TestObserver)
   vi.stubGlobal('ResizeObserver', TestObserver)
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -91,5 +98,54 @@ describe('Gallery layout', () => {
     await nextTick()
     expect((appendedPhoto.element as HTMLElement).style.top).toBe('24px')
     expect((appendedPhoto.element as HTMLElement).style.visibility).toBe('')
+  })
+})
+describe('Gallery loading states', () => {
+  it('keeps stale Photos visible while a background refresh is unresolved', async () => {
+    localStorage.setItem(
+      'cache:gallery-photos',
+      JSON.stringify({
+        timestamp: Date.now() - 900_001,
+        data: { photos: [photo('stale')], total: 1 },
+      }),
+    )
+    const refresh = Promise.withResolvers<{ photos: Photo[]; total: number }>()
+    vi.mocked(fetchPhotos).mockReturnValue(refresh.promise)
+
+    wrapper = mount(Gallery, { global: { stubs: { TransitionGroup: false } } })
+    await nextTick()
+
+    expect(wrapper.get('[data-photo-id="stale"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Loading...')
+
+    refresh.reject(new Error('Refresh failed'))
+    await flushPromises()
+
+    expect(wrapper.get('[data-photo-id="stale"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Refresh failed')
+    const retry = wrapper.findAll('button').find((button) => button.text() === 'Retry')
+    expect(retry?.text()).toBe('Retry')
+
+    vi.mocked(fetchPhotos).mockResolvedValueOnce({ photos: [photo('fresh')], total: 1 })
+    await retry?.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-photo-id="fresh"]').exists()).toBe(true)
+  })
+
+  it('shows Loading and a full-screen retryable error when no cached Photos exist', async () => {
+    const request = Promise.withResolvers<{ photos: Photo[]; total: number }>()
+    vi.mocked(fetchPhotos).mockReturnValue(request.promise)
+
+    wrapper = mount(Gallery)
+    await nextTick()
+    expect(wrapper.text()).toContain('Loading...')
+
+    request.reject(new Error('Initial load failed'))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Initial load failed')
+    expect(wrapper.findAll('button').find((button) => button.text() === 'Retry')?.text()).toBe('Retry')
+    expect(wrapper.find('#gallery').exists()).toBe(false)
   })
 })

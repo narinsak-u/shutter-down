@@ -7,6 +7,7 @@ interface ContentfulResponse {
   total?: unknown
 }
 
+/** Maps raw Contentful entries to comments and determines whether another page remains. */
 export function mapCommentPageItems(
   items: unknown[],
   skip: number,
@@ -38,6 +39,7 @@ function normalizeComment(value: unknown): InteractionComment {
   }
 }
 
+/** Fetches and maps one paginated page of visible comments from Contentful. */
 export async function fetchCommentPage(
   config: InteractionConfig,
   photoId: string,
