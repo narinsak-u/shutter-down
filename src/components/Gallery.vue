@@ -283,6 +283,7 @@ watch(
         <GalleryItem
           v-for="(item, index) in galleryStore.filteredPhotos"
           :key="item.id"
+          :data-photo-id="item.id"
           :src="item.src"
           :thumbSrc="item.thumbSrc"
           :alt="item.alt"
