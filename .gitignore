@@ -39,6 +39,6 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 
-
+.superpowers
 .worktrees/
 .env
