@@ -259,13 +259,15 @@ async function restoreEntry(entry: Entry, currentVersion?: Entry): Promise<boole
 
 async function createPublishedAsset(file: File, locale: string): Promise<Asset> {
   let uploadId: string | undefined;
+  let assetId: string | undefined;
   let asset: Asset | undefined;
   try {
     phase.value = "Uploading image...";
     const upload = await props.sdk.cma.upload.create({}, { file: await file.arrayBuffer() });
     uploadId = upload.sys.id;
+    assetId = crypto.randomUUID();
     progress.value = 30;
-    asset = await props.sdk.cma.asset.create({}, {
+    asset = await props.sdk.cma.asset.createWithId({ assetId }, {
       fields: {
         title: { [locale]: file.name },
         file: {
@@ -276,7 +278,7 @@ async function createPublishedAsset(file: File, locale: string): Promise<Asset> 
           },
         },
       },
-    });
+    }) as unknown as Asset;
     progress.value = 50;
     phase.value = "Processing image...";
     const processed = await props.sdk.cma.asset.processForLocale(
@@ -287,15 +289,39 @@ async function createPublishedAsset(file: File, locale: string): Promise<Asset> 
     );
     progress.value = 70;
     phase.value = "Publishing image...";
-    return await props.sdk.cma.asset.publish({ assetId: processed.sys.id }, processed);
+    return await props.sdk.cma.asset.publish({ assetId: processed.sys.id }, processed) as unknown as Asset;
   } catch (caught) {
-    if (asset) await cleanupAsset(asset.sys.id);
-    else if (uploadId) {
+    let assetRemoved = false;
+    let assetConfirmedAbsent = false;
+    if (asset) {
+      const cleanupId = typeof asset.sys?.id === "string" && asset.sys.id ? asset.sys.id : assetId;
+      assetRemoved = cleanupId ? await cleanupAsset(cleanupId) : false;
+    } else if (assetId && uploadId) {
+      let remoteAsset: Asset | undefined;
+      try {
+        remoteAsset = await props.sdk.cma.asset.get({ assetId }) as unknown as Asset;
+      } catch (inspectionError) {
+        if (isEntryNotFound(inspectionError)) assetConfirmedAbsent = true;
+        else {
+          throw new Error(`${getErrorMessage(caught, "Image upload failed")}. Asset state could not be confirmed; the asset and upload were retained.`);
+        }
+      }
+      if (remoteAsset) {
+        assetRemoved = await cleanupAsset(assetId);
+        if (!assetRemoved) {
+          throw new Error(`${getErrorMessage(caught, "Image upload failed")}. Asset cleanup could not be confirmed; the asset and upload were retained.`);
+        }
+      }
+    }
+    if (uploadId && (assetRemoved || assetConfirmedAbsent || !assetId)) {
       try {
         await props.sdk.cma.upload.delete({ uploadId });
       } catch {
-        // Best-effort cleanup for an upload without an asset.
+        // Best-effort cleanup after confirming no asset references this upload.
       }
+    }
+    if (asset && !assetRemoved) {
+      throw new Error(`${getErrorMessage(caught, "Image upload failed")}. Asset cleanup could not be confirmed; the asset and upload were retained.`);
     }
     throw caught;
   }

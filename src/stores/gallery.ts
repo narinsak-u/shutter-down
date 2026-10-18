@@ -19,6 +19,7 @@ export const useGalleryStore = defineStore('gallery', () => {
   const activeFilter = ref('all')
   const lightboxOpen = ref(false)
   const lightboxIndex = ref<number>(0)
+  let photosGeneration = 0
 
   const filteredPhotos = computed(() => {
     if (activeFilter.value === 'all') return photos.value
@@ -29,22 +30,24 @@ export const useGalleryStore = defineStore('gallery', () => {
     activeFilter.value = filter
   }
 
-  /** Fetches photos from Contentful, bypassing cache. Resets state and writes to cache on success. */
+  /** Fetches photos from Contentful, bypassing cache. Resets pagination on success and writes to cache. */
   async function fetchFromNetwork() {
+    const generation = ++photosGeneration
     loading.value = true
     error.value = null
-    skip.value = 0
-    hasMore.value = true
     try {
       const result = await fetchContentfulPhotos(0, PAGE_SIZE)
+      if (generation !== photosGeneration) return
       photos.value = result.photos
       hasMore.value = result.photos.length < result.total
       skip.value = result.photos.length
       setCache(CACHE_KEY, result)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load photos'
+      if (generation === photosGeneration) {
+        error.value = e instanceof Error ? e.message : 'Failed to load photos'
+      }
     } finally {
-      loading.value = false
+      if (generation === photosGeneration) loading.value = false
     }
   }
 
@@ -77,13 +80,16 @@ export const useGalleryStore = defineStore('gallery', () => {
 
   /** Appends the next page of photos. No-op if already loading or all loaded. */
   async function loadMore() {
-    if (loadingMore.value || !hasMore.value) return
+    if (loading.value || loadingMore.value || !hasMore.value) return
     loadingMore.value = true
+    const generation = photosGeneration
+    const requestedSkip = skip.value
     try {
-      const result = await fetchContentfulPhotos(skip.value, PAGE_SIZE)
+      const result = await fetchContentfulPhotos(requestedSkip, PAGE_SIZE)
+      if (generation !== photosGeneration) return
       photos.value = [...photos.value, ...result.photos]
-      hasMore.value = skip.value + result.photos.length < result.total
-      skip.value += result.photos.length
+      hasMore.value = requestedSkip + result.photos.length < result.total
+      skip.value = requestedSkip + result.photos.length
     } catch {
       // silent fail for scroll-triggered loads
     } finally {
