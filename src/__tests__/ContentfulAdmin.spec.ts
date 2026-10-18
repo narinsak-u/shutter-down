@@ -119,4 +119,65 @@ describe('Contentful Admin recovery', () => {
     expect(wrapper.get('[role="status"]').text()).toContain('Photo saved successfully')
     wrapper.unmount()
   })
+  it.each([
+    ['upload creation', 'upload'],
+    ['asset creation', 'create'],
+    ['asset processing', 'processForLocale'],
+    ['asset publication', 'publish'],
+  ])('cleans incomplete upload work when %s fails', async (_label, failurePoint) => {
+    const setup = sdkFor()
+    if (failurePoint === 'upload') {
+      vi.mocked(setup.sdk.cma.upload.create).mockRejectedValueOnce(new Error('image stage failed'))
+    } else if (failurePoint === 'create') {
+      vi.mocked(setup.sdk.cma.asset.create).mockRejectedValueOnce(new Error('image stage failed'))
+    } else if (failurePoint === 'processForLocale') {
+      vi.mocked(setup.sdk.cma.asset.processForLocale).mockRejectedValueOnce(new Error('image stage failed'))
+    } else {
+      vi.mocked(setup.sdk.cma.asset.publish).mockRejectedValueOnce(new Error('image stage failed'))
+    }
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'contentful-photo')
+    await wrapper.get('form').trigger('submit')
+
+    expect(setup.sdk.cma.entry.create).not.toHaveBeenCalled()
+    expect(wrapper.get('[role="alert"]').text()).toContain('image stage failed')
+    if (failurePoint === 'upload') expect(setup.sdk.cma.upload.delete).not.toHaveBeenCalled()
+    if (failurePoint === 'create') expect(setup.sdk.cma.upload.delete).toHaveBeenCalledWith({ uploadId: 'upload-1' })
+    if (failurePoint === 'processForLocale' || failurePoint === 'publish') {
+      expect(setup.calls).toContain('delete:new-asset')
+    }
+    wrapper.unmount()
+  })
+
+  it('cleans the published image when a new Photo draft cannot be created', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.entry.create).mockRejectedValueOnce(new Error('draft creation failed'))
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'contentful-photo')
+    await wrapper.get('form').trigger('submit')
+
+    expect(setup.calls).toContain('delete:new-asset')
+    expect(wrapper.get('[role="alert"]').text()).toContain('draft creation failed')
+    wrapper.unmount()
+  })
+
+  it('restores the existing Photo draft and keeps its old asset if update fails', async () => {
+    const setup = sdkFor()
+    vi.mocked(setup.sdk.cma.entry.update).mockRejectedValueOnce(new Error('entry update failed'))
+    const wrapper = mount(ContentfulAdmin, { props: { sdk: setup.sdk } })
+    await wrapper.get('nav button:nth-child(2)').trigger('click')
+    await wrapper.findAll('button').find((button) => button.text().includes('Existing location'))!.trigger('click')
+    await selectImage(wrapper)
+    await enterRequiredFields(wrapper, 'edit-photo')
+    await wrapper.get('form').trigger('submit')
+
+    expect(setup.sdk.cma.entry.update).toHaveBeenCalledTimes(2)
+    expect(setup.sdk.cma.entry.publish).not.toHaveBeenCalled()
+    expect(setup.calls).toContain('delete:new-asset')
+    expect(setup.calls).not.toContain('delete:old-asset')
+    expect(wrapper.get('[role="alert"]').text()).toContain('entry update failed')
+    wrapper.unmount()
+  })
 })
